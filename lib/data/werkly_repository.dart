@@ -7,6 +7,44 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../l10n/app_language.dart';
 import '../services/job_description_formatter.dart';
 
+/// Thrown when `ai-assistant` reports the free hourly quota is exhausted, so
+/// callers can show that specific, recoverable state instead of treating it
+/// like any other failure.
+class AiQuotaExceededException implements Exception {
+  const AiQuotaExceededException(this.message, {this.retryAfterSeconds});
+
+  final String message;
+  final int? retryAfterSeconds;
+}
+
+/// Parses the `ai-assistant` edge function's response. Pulled out of
+/// [WerklyRepository.askAi] as a pure function (no [SupabaseClient] involved)
+/// so it's directly unit-testable.
+(String, int?) parseAskAiResponse(
+  int status,
+  Object? data, {
+  required String unavailableMessage,
+  required String noResponseMessage,
+}) {
+  if (status == 429 && data is Map) {
+    final message = data['error'];
+    throw AiQuotaExceededException(
+      message is String ? message : unavailableMessage,
+      retryAfterSeconds: (data['retryAfterSeconds'] as num?)?.toInt(),
+    );
+  }
+  if (status < 200 || status >= 300 || data is! Map) {
+    throw Exception(unavailableMessage);
+  }
+  final reply = data['reply'];
+  if (reply is! String || reply.trim().isEmpty) {
+    final error = data['error'];
+    throw Exception(error is String ? error : noResponseMessage);
+  }
+  final remaining = (data['remainingHourlyRequests'] as num?)?.toInt();
+  return (reply.trim(), remaining);
+}
+
 class UserProfileData {
   const UserProfileData({
     required this.fullName,
@@ -547,7 +585,7 @@ class WerklyRepository {
     await _client.auth.signOut();
   }
 
-  Future<String> askAi({
+  Future<(String, int?)> askAi({
     required String message,
     required UserProfileData profile,
     required Map<String, dynamic> selectedJob,
@@ -573,16 +611,12 @@ class WerklyRepository {
         'jobs': bestMatches,
       },
     );
-    final data = response.data;
-    if (response.status < 200 || response.status >= 300 || data is! Map) {
-      throw Exception(_tr('errorAssistantUnavailable'));
-    }
-    final reply = data['reply'];
-    if (reply is! String || reply.trim().isEmpty) {
-      final error = data['error'];
-      throw Exception(error is String ? error : _tr('errorAiNoResponse'));
-    }
-    return reply.trim();
+    return parseAskAiResponse(
+      response.status,
+      response.data,
+      unavailableMessage: _tr('errorAssistantUnavailable'),
+      noResponseMessage: _tr('errorAiNoResponse'),
+    );
   }
 
   Future<void> reportAiContent({

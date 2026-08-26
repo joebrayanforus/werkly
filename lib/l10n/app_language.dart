@@ -1587,6 +1587,11 @@ class AppStrings {
       'Kostenlose Gemini-KI · lokaler Ersatzmodus',
       'Free Gemini AI · local fallback mode',
     ],
+    'assistantQuotaRemaining': [
+      '{count} questions gratuites restantes cette heure',
+      'Noch {count} kostenlose Fragen in dieser Stunde',
+      '{count} free questions left this hour',
+    ],
     'assistantLocalFallback': [
       'Mode local (le service génératif gratuit est indisponible).',
       'Lokaler Modus (der kostenlose generative Dienst ist nicht verfügbar).',
