@@ -75,8 +75,14 @@ String _applicationLetter({
         ),
       )
       .toList();
+  // Without a real match, fall back to the job's own tags -- but skip
+  // boilerplate ones ("Werkstudent", "IT"...) so the letter never claims
+  // a generic label as if it were an actual skill.
+  final fallbackSkills = job.tags
+      .where((tag) => !isGenericJobTag(tag))
+      .toList();
   final skillValues = matchingSkills.isEmpty
-      ? job.tags.take(2).toList()
+      ? fallbackSkills.take(2).toList()
       : matchingSkills.take(3).toList();
   final skills = skillValues.isEmpty
       ? strings.get('interviewRoleSkillsFallback')

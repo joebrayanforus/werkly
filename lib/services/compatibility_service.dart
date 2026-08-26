@@ -321,6 +321,11 @@ List<String> _profileSkills(UserProfileData profile) {
   return values.where((value) => value.trim().isNotEmpty).toList();
 }
 
+/// Whether [tag] is boilerplate ("Werkstudent", "IT", "Sales"...) rather than
+/// an actual skill -- useful whenever a caller falls back to a job's raw tags
+/// instead of a real skill match, so it doesn't present noise as a skill.
+bool isGenericJobTag(String tag) => _genericJobTags.contains(_normalize(tag));
+
 List<String> _jobSkills(List<String> tags, String jobText) {
   final result = <String>{};
   for (final tag in tags) {
