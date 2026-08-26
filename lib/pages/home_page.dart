@@ -121,6 +121,35 @@ $name''',
   };
 }
 
+/// The job context sent to the AI assistant for a selected job -- shared so
+/// every caller (the assistant chat, the dedicated AI letter button) sends
+/// the exact same shape.
+Map<String, dynamic> jobAiContext(Job job) => {
+  'title': job.title,
+  'company': job.company,
+  'location': job.location,
+  'tags': job.tags,
+  'description': job.description,
+};
+
+Future<bool?> askAiConsent(BuildContext context) => showDialog<bool>(
+  context: context,
+  builder: (context) => AlertDialog(
+    title: Text(context.tr('aiConsentTitle')),
+    content: Text(context.tr('aiConsentBody')),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context, false),
+        child: Text(context.tr('stayLocal')),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, true),
+        child: Text(context.tr('continue')),
+      ),
+    ],
+  ),
+);
+
 double _distanceBetweenKm(
   double latitudeA,
   double longitudeA,
@@ -1573,7 +1602,63 @@ class _HomePageState extends State<HomePage> {
   );
 
   Future<void> _showLetter(Job job) async {
-    final letter = _coverLetter(job);
+    var useAi = false;
+    if (_repository.currentUser != null) {
+      var privacyChoice = await _repository.getAiPrivacyChoice();
+      if (privacyChoice == null && mounted) {
+        privacyChoice = await askAiConsent(context);
+        if (privacyChoice != null) {
+          await _repository.setAiPrivacyChoice(privacyChoice);
+        }
+      }
+      useAi = privacyChoice == true;
+    }
+
+    var letter = _coverLetter(job);
+    var byAi = false;
+    String? fallbackNote;
+
+    if (useAi) {
+      if (mounted) {
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => AlertDialog(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: 16),
+                Expanded(child: Text(context.tr('letterGenerating'))),
+              ],
+            ),
+          ),
+        );
+      }
+      if (mounted) {
+        try {
+          final (reply, _) = await _repository.askAi(
+            message: context.tr('assistantLetterPrompt'),
+            profile: _profile,
+            selectedJob: jobAiContext(job),
+            bestMatches: const [],
+          );
+          letter = reply;
+          byAi = true;
+        } on AiQuotaExceededException catch (error) {
+          fallbackNote = error.message;
+        } catch (_) {
+          fallbackNote = mounted ? context.tr('letterAiUnavailable') : null;
+        }
+      }
+      if (mounted) Navigator.pop(context);
+    }
+
+    if (!mounted) return;
     await showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -1582,7 +1667,26 @@ class _HomePageState extends State<HomePage> {
         ),
         content: SizedBox(
           width: 620,
-          child: SingleChildScrollView(child: SelectableText(letter)),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  byAi
+                      ? context.tr('letterByNia')
+                      : fallbackNote ?? context.tr('letterQuickTemplate'),
+                  style: TextStyle(
+                    color: byAi ? _green : _muted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SelectableText(letter),
+              ],
+            ),
+          ),
         ),
         actions: [
           TextButton(
