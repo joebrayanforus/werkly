@@ -238,4 +238,12 @@ void main() {
     expect(technical.relevance, greaterThan(unrelated.relevance + 45));
     expect(technical.overall, greaterThan(unrelated.overall));
   });
+
+  test('flags boilerplate job tags so callers do not present them as skills', () {
+    expect(isGenericJobTag('Werkstudent'), isTrue);
+    expect(isGenericJobTag('werkstudent'), isTrue);
+    expect(isGenericJobTag('IT'), isTrue);
+    expect(isGenericJobTag('Erneuerbare Energien'), isFalse);
+    expect(isGenericJobTag('Flutter'), isFalse);
+  });
 }
