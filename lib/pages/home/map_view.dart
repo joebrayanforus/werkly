@@ -296,7 +296,7 @@ class _MapJobList extends StatelessWidget {
             itemCount: jobs.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, index) => SizedBox(
-              height: 230,
+              height: 264,
               child: _JobCard(
                 job: jobs[index],
                 compact: true,
