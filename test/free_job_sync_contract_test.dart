@@ -22,6 +22,14 @@ void main() {
     expect(source, contains(".eq('active', true)"));
     expect(source, contains(".not('fingerprint', 'is', null)"));
     expect(source, contains('fingerprint: jobFingerprint(row)'));
+    // Bundesagentur für Arbeit reports far more matching postings than a
+    // single page covers (verified live: maxCount 4170 against a 100-per-page
+    // API) -- the sync must page through more than just the first page.
+    expect(source, contains('Array.from({ length: 10 }'));
+    expect(source, contains("endpoint.searchParams.set('page', page.toString())"));
+    expect(source, contains("{ token: 'n26', company: 'N26' }"));
+    expect(source, contains("{ token: 'getyourguide', company: 'GetYourGuide' }"));
+    expect(source, contains("{ token: 'grover', company: 'Grover' }"));
     expect(source, isNot(contains('linkedin.com/jobs')));
     expect(source, isNot(contains('indeed.com/jobs')));
     expect(source, isNot(contains('stepstone.de/jobs')));

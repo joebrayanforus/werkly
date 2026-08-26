@@ -136,6 +136,9 @@ type ProviderMetrics = {
 const greenhouseBoards = [
   { token: 'sumup', company: 'SumUp' },
   { token: 'celonis', company: 'Celonis' },
+  { token: 'n26', company: 'N26' },
+  { token: 'getyourguide', company: 'GetYourGuide' },
+  { token: 'grover', company: 'Grover' },
 ]
 
 const leverSites = [
@@ -328,25 +331,38 @@ function skills(title: string, description: string, extras: string[] = []) {
 }
 
 async function fetchBundesagentur(): Promise<JobRow[]> {
-  const endpoint = new URL('https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs')
-  endpoint.searchParams.set('was', 'Werkstudent')
-  endpoint.searchParams.set('wo', 'Deutschland')
-  endpoint.searchParams.set('umkreis', '200')
-  endpoint.searchParams.set('page', '1')
-  endpoint.searchParams.set('size', '100')
-  const response = await fetch(endpoint, {
-    headers: { 'X-API-Key': 'jobboerse-jobsuche', Accept: 'application/json' },
-    signal: AbortSignal.timeout(12_000),
-  })
-  if (!response.ok) throw new Error(`Bundesagentur ${response.status}`)
-  const payload = await response.json() as { ergebnisliste?: BaJob[] }
-  if (!Array.isArray(payload.ergebnisliste)) throw new Error('Bundesagentur malformed response')
-  return payload.ergebnisliste.flatMap((job) => {
+  // Verified live against the API: this exact query reports maxCount: 4170
+  // total matching postings, of which a single page only ever covered 100.
+  // Ten pages (1,000 postings) meaningfully closes that gap without sending
+  // dozens of concurrent requests to a free government API every run.
+  const pages = Array.from({ length: 10 }, (_, index) => index + 1)
+  const pageResults = await Promise.all(pages.map(async (page) => {
+    const endpoint = new URL('https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs')
+    endpoint.searchParams.set('was', 'Werkstudent')
+    endpoint.searchParams.set('wo', 'Deutschland')
+    endpoint.searchParams.set('umkreis', '200')
+    endpoint.searchParams.set('page', page.toString())
+    endpoint.searchParams.set('size', '100')
+    const response = await fetch(endpoint, {
+      headers: { 'X-API-Key': 'jobboerse-jobsuche', Accept: 'application/json' },
+      signal: AbortSignal.timeout(12_000),
+    })
+    if (!response.ok) throw new Error(`Bundesagentur page ${page} ${response.status}`)
+    const payload = await response.json() as { ergebnisliste?: BaJob[] }
+    if (!Array.isArray(payload.ergebnisliste)) {
+      throw new Error(`Bundesagentur page ${page} malformed response`)
+    }
+    return payload.ergebnisliste
+  }))
+
+  const seen = new Set<string>()
+  return pageResults.flat().flatMap((job) => {
     const reference = text(job.referenznummer)
     const title = text(job.stellenangebotsTitel)
     const company = text(job.firma)
     const place = job.stellenlokationen?.[0]
-    if (!reference || !title || !company || !place) return []
+    if (!reference || seen.has(reference) || !title || !company || !place) return []
+    seen.add(reference)
     const city = text(place.adresse?.ort, 'Deutschland')
     const region = text(place.adresse?.region).replaceAll('_', ' ')
     const tags = skills(title, '', [text(job.hauptberuf), ...(job.alleBerufe ?? [])])
