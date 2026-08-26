@@ -22,6 +22,7 @@ class _AssistantSheetState extends State<_AssistantSheet> {
   final _repository = WerklyRepository();
   final List<(bool, String)> _messages = [];
   bool _loading = false;
+  int? _remainingHourlyRequests;
 
   @override
   void initState() {
@@ -77,13 +78,25 @@ class _AssistantSheetState extends State<_AssistantSheet> {
     try {
       final ranked = [...widget.jobs]
         ..sort((a, b) => b.match.compareTo(a.match));
-      final reply = await _repository.askAi(
+      final (reply, remaining) = await _repository.askAi(
         message: message,
         profile: widget.profile,
         selectedJob: _jobContext(widget.selectedJob),
         bestMatches: ranked.take(5).map(_matchContext).toList(),
       );
-      if (mounted) setState(() => _messages.add((false, reply)));
+      if (mounted) {
+        setState(() {
+          _messages.add((false, reply));
+          if (remaining != null) _remainingHourlyRequests = remaining;
+        });
+      }
+    } on AiQuotaExceededException catch (error) {
+      if (mounted) {
+        setState(() {
+          _messages.add((false, error.message));
+          _remainingHourlyRequests = 0;
+        });
+      }
     } catch (_) {
       if (mounted) {
         setState(() {
@@ -427,7 +440,11 @@ Practice question: “Tell me about a project where you had to learn a new skill
                         Text(
                           _repository.currentUser == null
                               ? context.tr('assistantLocalMode')
-                              : context.tr('assistantGeminiMode'),
+                              : _remainingHourlyRequests == null
+                              ? context.tr('assistantGeminiMode')
+                              : context.trFormat('assistantQuotaRemaining', {
+                                  'count': _remainingHourlyRequests!,
+                                }),
                           style: const TextStyle(color: _green, fontSize: 10),
                         ),
                       ],
