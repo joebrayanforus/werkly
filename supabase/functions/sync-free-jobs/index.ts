@@ -831,7 +831,26 @@ Deno.serve(async (request) => {
   // Prefer direct employer feeds, then the federal source, then aggregators.
   // Identical jobs inside one provider remain untouched because two separate
   // vacancies can legitimately share a title, company and city.
+  //
+  // Seeded from already-active rows so a source claims a fingerprint across
+  // runs, not just within this one -- otherwise a source that was briefly
+  // unreachable would come back and re-import a duplicate of a job a
+  // lower-priority source already picked up while it was down.
   const persistedFingerprintOwners = new Map<string, string>()
+  const { data: existingFingerprints, error: fingerprintReadError } = await admin
+    .from('jobs')
+    .select('fingerprint, source')
+    .eq('active', true)
+    .not('fingerprint', 'is', null)
+  if (fingerprintReadError) {
+    console.error('Existing fingerprint read failed', fingerprintReadError)
+  } else {
+    for (const row of existingFingerprints ?? []) {
+      if (row.fingerprint && !persistedFingerprintOwners.has(row.fingerprint)) {
+        persistedFingerprintOwners.set(row.fingerprint, row.source)
+      }
+    }
+  }
   const orderedCandidates = candidates
     .sort((left, right) => sourcePriority(left.source) - sourcePriority(right.source))
 
@@ -851,6 +870,7 @@ Deno.serve(async (request) => {
       const batch = providerRows.slice(rowIndex, rowIndex + 100).map((row) => ({
         ...row,
         last_seen_at: runStarted,
+        fingerprint: jobFingerprint(row),
       }))
       const { error } = await admin.from('jobs').upsert(batch, {
         onConflict: 'source,external_id',

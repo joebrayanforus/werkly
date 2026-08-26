@@ -879,6 +879,26 @@ class AppStrings {
       'Bewerbungspaket',
       'Application kit',
     ],
+    'sourceOfficialEmployer': [
+      'Offre publiée directement par l’entreprise',
+      'Direkt vom Unternehmen veröffentlicht',
+      'Posted directly by the employer',
+    ],
+    'sourceOfficialBoard': [
+      'Bourse officielle de l’emploi (Bundesagentur für Arbeit)',
+      'Offizielle Jobbörse (Bundesagentur für Arbeit)',
+      'Official job board (Bundesagentur für Arbeit)',
+    ],
+    'sourceVerifiedSubmission': [
+      'Offre soumise et vérifiée par Werkly',
+      'Von Werkly geprüfte Einreichung',
+      'Submitted and verified by Werkly',
+    ],
+    'sourceAggregator': [
+      'Offre agrégée depuis une autre plateforme',
+      'Aggregierte Anzeige von einer anderen Plattform',
+      'Aggregated listing from another platform',
+    ],
     'readyToSend': ['Prêt à envoyer', 'Versandbereit', 'Ready to send'],
     'profileSummaryReady': [
       'Profil et résumé professionnel complétés',

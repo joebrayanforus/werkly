@@ -87,4 +87,26 @@ void main() {
     ]);
     expect(missingJobSkills(target, ['Flutter/Dart', 'Git']), ['REST API']);
   });
+
+  test('classifies job sources by how they were published', () {
+    // Real source strings produced by supabase/functions/sync-free-jobs and
+    // by the employer-submission approval trigger -- keep these in sync with
+    // that pipeline rather than inventing new labels here.
+    expect(
+      jobSourceTrust('Bundesagentur für Arbeit'),
+      SourceTrust.officialBoard,
+    );
+    expect(
+      jobSourceTrust('Greenhouse · Celonis'),
+      SourceTrust.officialEmployer,
+    );
+    expect(jobSourceTrust('Lever · FINN'), SourceTrust.officialEmployer);
+    expect(jobSourceTrust('SmartRecruiters'), SourceTrust.officialEmployer);
+    expect(jobSourceTrust('Arbeitnow'), SourceTrust.aggregator);
+    expect(jobSourceTrust('Adzuna'), SourceTrust.aggregator);
+    expect(
+      jobSourceTrust('Entreprise vérifiée'),
+      SourceTrust.verifiedSubmission,
+    );
+  });
 }

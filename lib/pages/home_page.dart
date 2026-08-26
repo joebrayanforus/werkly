@@ -343,6 +343,31 @@ List<String> missingJobSkills(Job job, Iterable<String> profileSkills) => job
     .toSet()
     .toList();
 
+/// How trustworthy a job listing's source is, mirroring the priority order
+/// `sync-free-jobs` already uses internally (direct employer feeds > the
+/// federal job board > aggregators) plus Werkly's own admin-verified
+/// employer submissions.
+enum SourceTrust { officialEmployer, officialBoard, verifiedSubmission, aggregator }
+
+SourceTrust jobSourceTrust(String source) {
+  if (source == 'Entreprise vérifiée') return SourceTrust.verifiedSubmission;
+  if (source == 'Bundesagentur für Arbeit') return SourceTrust.officialBoard;
+  if (source.startsWith('Greenhouse · ') ||
+      source.startsWith('Lever · ') ||
+      source == 'SmartRecruiters') {
+    return SourceTrust.officialEmployer;
+  }
+  return SourceTrust.aggregator;
+}
+
+String _localizedSourceTrust(BuildContext context, SourceTrust trust) =>
+    context.tr(switch (trust) {
+      SourceTrust.officialEmployer => 'sourceOfficialEmployer',
+      SourceTrust.officialBoard => 'sourceOfficialBoard',
+      SourceTrust.verifiedSubmission => 'sourceVerifiedSubmission',
+      SourceTrust.aggregator => 'sourceAggregator',
+    });
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 

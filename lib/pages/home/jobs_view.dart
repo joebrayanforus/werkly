@@ -552,6 +552,12 @@ class _JobDetail extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Center(
+              child: _Tag(
+                label: _localizedSourceTrust(context, jobSourceTrust(job.source)),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Center(
               child: TextButton.icon(
                 onPressed: job.sourceUrl.isEmpty
                     ? null
