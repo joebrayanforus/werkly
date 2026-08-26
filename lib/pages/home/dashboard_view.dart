@@ -97,7 +97,7 @@ class _DashboardView extends StatelessWidget {
                   const SizedBox(height: 14),
                   if (constraints.maxWidth >= 920)
                     SizedBox(
-                      height: 275,
+                      height: 285,
                       child: Row(
                         children: [
                           for (var i = 0; i < jobs.length; i++) ...[
@@ -116,7 +116,7 @@ class _DashboardView extends StatelessWidget {
                     )
                   else
                     SizedBox(
-                      height: 275,
+                      height: 285,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: jobs.length,

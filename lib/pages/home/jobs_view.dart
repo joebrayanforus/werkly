@@ -180,7 +180,7 @@ class _JobsView extends StatelessWidget {
                                 separatorBuilder: (_, _) =>
                                     const SizedBox(height: 11),
                                 itemBuilder: (context, index) => SizedBox(
-                                  height: 240,
+                                  height: 264,
                                   child: _JobCard(
                                     job: jobs[index],
                                     saved: savedJobs.contains(jobs[index].id),
