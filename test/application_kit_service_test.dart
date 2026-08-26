@@ -36,4 +36,32 @@ void main() {
     await sample.parent.create(recursive: true);
     await sample.writeAsBytes(bytes, flush: true);
   });
+
+  test(
+    'keeps boilerplate job tags out of matched and missing skills',
+    () {
+      final data = ApplicationKitData(
+        applicantName: 'Alex Martin',
+        email: 'alex@example.com',
+        degree: 'Master Informatik',
+        university: 'TU München',
+        city: 'München',
+        summary: 'Flutter developer with practical project experience.',
+        profileSkills: const ['Flutter'],
+        jobTitle: 'Werkstudent Erneuerbare Energien',
+        company: 'Example GmbH',
+        jobLocation: 'München',
+        jobTags: const ['Werkstudent', 'IT', 'Erneuerbare Energien', 'Flutter'],
+        sourceUrl: 'https://example.com/job',
+        coverLetter: 'Dear Hiring Team,\n\nI am pleased to apply.\n\nKind regards,\nAlex Martin',
+        generatedAt: DateTime.utc(2026, 8, 9),
+        language: AppLanguage.en,
+      );
+
+      expect(data.matchedSkills, ['Flutter']);
+      expect(data.missingSkills, ['Erneuerbare Energien']);
+      expect(data.missingSkills, isNot(contains('Werkstudent')));
+      expect(data.missingSkills, isNot(contains('IT')));
+    },
+  );
 }
