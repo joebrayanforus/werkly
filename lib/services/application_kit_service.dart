@@ -3,6 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../l10n/app_language.dart';
+import 'compatibility_service.dart';
 
 class ApplicationKitData {
   const ApplicationKitData({
@@ -39,7 +40,12 @@ class ApplicationKitData {
   final DateTime generatedAt;
   final AppLanguage language;
 
-  List<String> get matchedSkills => jobTags
+  // Boilerplate tags ("Werkstudent", "IT"...) are never real skills, so they
+  // should never show up as either a match or something to add to the CV.
+  List<String> get _realJobTags =>
+      jobTags.where((tag) => !isGenericJobTag(tag)).toList();
+
+  List<String> get matchedSkills => _realJobTags
       .where(
         (tag) => profileSkills.any(
           (skill) =>
@@ -50,7 +56,7 @@ class ApplicationKitData {
       .toList();
 
   List<String> get missingSkills =>
-      jobTags.where((tag) => !matchedSkills.contains(tag)).toList();
+      _realJobTags.where((tag) => !matchedSkills.contains(tag)).toList();
 }
 
 class ApplicationKitService {
