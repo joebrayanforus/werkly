@@ -1,0 +1,23 @@
+import 'package:flutter/foundation.dart';
+
+const werklyAuthConfirmedUrl =
+    'https://bygqatraidykcxjfjala.supabase.co/functions/v1/auth-confirmed';
+
+const werklyPasswordRecoveryDeepLink = 'de.werkly.app://reset-callback/';
+
+String werklyPasswordRecoveryRedirect({bool? web, Uri? currentUri}) {
+  if (web ?? kIsWeb) {
+    final uri = currentUri ?? Uri.base;
+    if (uri.hasAuthority) {
+      return Uri(
+        scheme: uri.scheme,
+        userInfo: uri.userInfo,
+        host: uri.host,
+        port: uri.hasPort ? uri.port : null,
+        path: '/',
+        queryParameters: const {'auth': 'recovery'},
+      ).toString();
+    }
+  }
+  return werklyPasswordRecoveryDeepLink;
+}

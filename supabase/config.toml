@@ -1,0 +1,6 @@
+project_id = "bygqatraidykcxjfjala"
+
+# Modern sb_publishable keys are not JWTs. The function validates the apikey
+# header itself, so deployments must preserve this setting.
+[functions.sync-free-jobs]
+verify_jwt = false

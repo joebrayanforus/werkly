@@ -1,0 +1,12 @@
+-- 20260806170000_lock_trigger_function.sql revoked EXECUTE on
+-- public.handle_new_user() from public/anon/authenticated to stop clients
+-- from invoking the trigger function directly via RPC. That revoke also
+-- stripped supabase_auth_admin's ability to fire it, since that role only
+-- ever had EXECUTE implicitly through the PUBLIC grant.
+--
+-- supabase_auth_admin is the role GoTrue uses to insert new rows into
+-- auth.users, which is what fires on_auth_user_created. Without EXECUTE,
+-- that insert (and therefore every sign-up) fails, the transaction rolls
+-- back, and no confirmation email is ever sent because the user row was
+-- never committed.
+grant execute on function public.handle_new_user() to supabase_auth_admin;
