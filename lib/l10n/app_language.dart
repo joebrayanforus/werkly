@@ -1524,6 +1524,26 @@ class AppStrings {
       'Anschreiben kopiert.',
       'Letter copied.',
     ],
+    'letterGenerating': [
+      'Nia rédige ta lettre…',
+      'Nia schreibt dein Anschreiben…',
+      'Nia is writing your letter…',
+    ],
+    'letterByNia': [
+      'Rédigée par Nia',
+      'Von Nia geschrieben',
+      'Written by Nia',
+    ],
+    'letterQuickTemplate': [
+      'Modèle rapide',
+      'Schnellvorlage',
+      'Quick template',
+    ],
+    'letterAiUnavailable': [
+      'IA indisponible pour le moment : voici un modèle rapide.',
+      'KI derzeit nicht verfügbar: hier eine Schnellvorlage.',
+      'AI unavailable right now — showing a quick template instead.',
+    ],
     'copy': ['Copier', 'Kopieren', 'Copy'],
     'externalOpenFailed': [
       'Impossible d’ouvrir {provider}.',

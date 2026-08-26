@@ -62,7 +62,7 @@ class _AssistantSheetState extends State<_AssistantSheet> {
 
     var privacyChoice = await _repository.getAiPrivacyChoice();
     if (privacyChoice == null && mounted) {
-      privacyChoice = await _askForAiConsent();
+      privacyChoice = await askAiConsent(context);
       if (privacyChoice != null) {
         await _repository.setAiPrivacyChoice(privacyChoice);
       }
@@ -81,7 +81,7 @@ class _AssistantSheetState extends State<_AssistantSheet> {
       final (reply, remaining) = await _repository.askAi(
         message: message,
         profile: widget.profile,
-        selectedJob: _jobContext(widget.selectedJob),
+        selectedJob: jobAiContext(widget.selectedJob),
         bestMatches: ranked.take(5).map(_matchContext).toList(),
       );
       if (mounted) {
@@ -215,38 +215,12 @@ class _AssistantSheetState extends State<_AssistantSheet> {
     }
   }
 
-  Map<String, dynamic> _jobContext(Job job) => {
-    'title': job.title,
-    'company': job.company,
-    'location': job.location,
-    'tags': job.tags,
-    'description': job.description,
-  };
-
   Map<String, dynamic> _matchContext(Job job) => {
     'title': job.title,
     'company': job.company,
     'match': job.match,
     'tags': job.tags,
   };
-
-  Future<bool?> _askForAiConsent() => showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(context.tr('aiConsentTitle')),
-      content: Text(context.tr('aiConsentBody')),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(context.tr('stayLocal')),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(context.tr('continue')),
-        ),
-      ],
-    ),
-  );
 
   String _reply(String message) {
     final normalized = message.toLowerCase();
