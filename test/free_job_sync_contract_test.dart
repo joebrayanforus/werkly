@@ -16,6 +16,12 @@ void main() {
     expect(source, contains(".lt('last_seen_at', runStarted)"));
     expect(source, contains('jobFingerprint(row)'));
     expect(source, contains('sourcePriority(left.source)'));
+    // Dedup ownership must be seeded from already-active rows, not rebuilt
+    // empty every run, otherwise a source coming back online after a gap
+    // re-imports a duplicate of a job a lower-priority source already has.
+    expect(source, contains(".eq('active', true)"));
+    expect(source, contains(".not('fingerprint', 'is', null)"));
+    expect(source, contains('fingerprint: jobFingerprint(row)'));
     expect(source, isNot(contains('linkedin.com/jobs')));
     expect(source, isNot(contains('indeed.com/jobs')));
     expect(source, isNot(contains('stepstone.de/jobs')));
