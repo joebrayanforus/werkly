@@ -879,6 +879,11 @@ class AppStrings {
       'Bewerbungspaket',
       'Application kit',
     ],
+    'beforeYouApply': [
+      'Avant d’envoyer ta candidature',
+      'Bevor du dich bewirbst',
+      'Before you apply',
+    ],
     'readyToSend': ['Prêt à envoyer', 'Versandbereit', 'Ready to send'],
     'profileSummaryReady': [
       'Profil et résumé professionnel complétés',

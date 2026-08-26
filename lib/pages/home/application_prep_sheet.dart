@@ -170,6 +170,13 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
                     ],
                   ),
                   const SizedBox(height: 22),
+                  if (widget.job.compatibility.scored &&
+                      widget.job.compatibility.cautions.isNotEmpty) ...[
+                    _ApplicationCautionCard(
+                      cautions: widget.job.compatibility.cautions,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -428,6 +435,58 @@ class _PrepSkillBlock extends StatelessWidget {
                     side: BorderSide(color: color.withValues(alpha: .18)),
                   ),
               ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApplicationCautionCard extends StatelessWidget {
+  const _ApplicationCautionCard({required this.cautions});
+
+  final List<String> cautions;
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xFFA86416);
+    const background = Color(0xFFFFF4E4);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Color(0x40A86416)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.info_outline_rounded, color: color, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                context.tr('beforeYouApply'),
+                style: const TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final caution in cautions)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                '•  $caution',
+                style: const TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
             ),
         ],
       ),
