@@ -1553,7 +1553,11 @@ class AppStrings {
           'affichés séparément, donc ne les répète pas et ne mets aucun texte entre '
           'crochets. Commence directement par une formule de salutation, rédige 2 à '
           '4 courts paragraphes séparés par une ligne vide, puis termine par une '
-          'formule de politesse suivie du prénom du candidat sur la ligne suivante.',
+          'formule de politesse suivie du prénom du candidat sur la ligne suivante. '
+          'Si le contexte contient des expériences professionnelles réelles (poste, '
+          'employeur, tâches), appuie-toi précisément dessus — nomme l’employeur et '
+          'les tâches réelles au lieu de rester vague ; sinon, reste général sans '
+          'inventer d’expérience.',
       'Schreibe ausschließlich den Fließtext eines Anschreibens für diese '
           'Stelle, fertig zum direkten Einfügen in ein finales Dokument. '
           'Schreibe reinen Text ohne Sternchen oder andere Markdown-Formatierung, '
@@ -1563,7 +1567,11 @@ class AppStrings {
           'nicht und verwende keine Platzhalter in eckigen Klammern. Beginne '
           'direkt mit einer Anrede, schreibe 2 bis 4 kurze Absätze, getrennt '
           'durch eine Leerzeile, und schließe mit einer Grußformel gefolgt vom '
-          'Vornamen des Kandidaten in der nächsten Zeile.',
+          'Vornamen des Kandidaten in der nächsten Zeile. Enthält der Kontext '
+          'echte berufliche Erfahrungen (Position, Arbeitgeber, Aufgaben), stütze '
+          'dich konkret darauf — nenne den echten Arbeitgeber und die echten '
+          'Aufgaben statt allgemein zu bleiben; ist das nicht der Fall, bleibe '
+          'allgemein und erfinde keine Erfahrung.',
       'Write only the body of a cover letter for this job, ready to be dropped '
           'straight into a final document. Write plain prose with no asterisks or '
           'other markdown formatting, no heading, no note or comment about your '
@@ -1572,7 +1580,10 @@ class AppStrings {
           'repeat them and do not use any bracketed placeholders. Start directly '
           'with a salutation, write 2 to 4 short paragraphs separated by a blank '
           'line, then end with a closing line followed by the applicant’s first '
-          'name on the next line.',
+          'name on the next line. If the context includes real work experience '
+          '(role, employer, tasks), ground the letter in it specifically — name '
+          'the real employer and real tasks instead of staying vague; if not, '
+          'stay general and do not invent experience.',
     ],
     'downloadLetter': [
       'Télécharger',

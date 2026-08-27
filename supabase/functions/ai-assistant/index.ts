@@ -16,6 +16,12 @@ type AssistantBody = {
     summary?: string
     skills?: string[]
     preferences?: Record<string, unknown>
+    experiences?: Array<{
+      title?: string
+      organization?: string
+      period?: string
+      highlights?: string[]
+    }>
   }
   job?: {
     title?: string
@@ -180,6 +186,17 @@ Deno.serve(async (request) => {
       summary: clean(body.profile?.summary, 1_000),
       skills: (body.profile?.skills ?? []).map((item) => clean(item, 80)).filter(Boolean).slice(0, 30),
       preferences: safePreferences(body.profile?.preferences),
+      experiences: (body.profile?.experiences ?? []).slice(0, 6).flatMap((entry) => {
+        const title = clean(entry?.title, 160)
+        const organization = clean(entry?.organization, 160)
+        if (!title && !organization) return []
+        return [{
+          title,
+          organization,
+          period: clean(entry?.period, 80),
+          highlights: (entry?.highlights ?? []).map((item) => clean(item, 200)).filter(Boolean).slice(0, 3),
+        }]
+      }),
     },
     selectedJob: {
       title: clean(body.job?.title),
