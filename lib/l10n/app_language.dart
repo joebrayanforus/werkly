@@ -1544,6 +1544,11 @@ class AppStrings {
       'KI derzeit nicht verfügbar: hier eine Schnellvorlage.',
       'AI unavailable right now — showing a quick template instead.',
     ],
+    'downloadLetter': [
+      'Télécharger',
+      'Herunterladen',
+      'Download',
+    ],
     'copy': ['Copier', 'Kopieren', 'Copy'],
     'externalOpenFailed': [
       'Impossible d’ouvrir {provider}.',

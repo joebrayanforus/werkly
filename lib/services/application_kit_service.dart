@@ -62,7 +62,18 @@ class ApplicationKitData {
 class ApplicationKitService {
   const ApplicationKitService._();
 
-  static Future<Uint8List> buildPdf(ApplicationKitData data) async {
+  /// Shared document/theme setup for both [buildPdf] and [buildLetterPdf], so
+  /// the letter-only PDF looks and reads identically to the letter page
+  /// inside the full kit rather than drifting into a second copy.
+  static Future<
+    ({
+      pw.Document document,
+      pw.ThemeData theme,
+      String generatedDate,
+      AppStrings strings,
+    })
+  >
+  _newDocument(ApplicationKitData data) async {
     final strings = AppStrings(data.language);
     final regularData = await rootBundle.load(
       'assets/fonts/Poppins-Regular.ttf',
@@ -87,61 +98,97 @@ class ApplicationKitService {
       italic: regularFont,
       boldItalic: semiboldFont,
     );
-    final generatedDate = _date(data.generatedAt);
+    return (
+      document: document,
+      theme: theme,
+      generatedDate: _date(data.generatedAt),
+      strings: strings,
+    );
+  }
+
+  static pw.Widget _letterPageContent(
+    AppStrings strings,
+    ApplicationKitData data,
+    String generatedDate,
+  ) => pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      _header(strings.get('pdfCoverLetter'), generatedDate),
+      pw.SizedBox(height: 28),
+      pw.Text(
+        data.applicantName,
+        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+      ),
+      if (data.email.isNotEmpty) pw.Text(data.email),
+      if (data.city.isNotEmpty) pw.Text(data.city),
+      pw.SizedBox(height: 26),
+      pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.all(14),
+        decoration: pw.BoxDecoration(
+          color: const PdfColor.fromInt(0xFFF0F6F2),
+          borderRadius: pw.BorderRadius.circular(8),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              data.jobTitle,
+              style: pw.TextStyle(
+                fontSize: 15,
+                fontWeight: pw.FontWeight.bold,
+                color: const PdfColor.fromInt(0xFF2F6B55),
+              ),
+            ),
+            pw.SizedBox(height: 3),
+            pw.Text('${data.company} - ${data.jobLocation}'),
+          ],
+        ),
+      ),
+      pw.SizedBox(height: 24),
+      for (final paragraph in data.coverLetter.split('\n\n')) ...[
+        pw.Text(
+          paragraph.trim(),
+          style: const pw.TextStyle(fontSize: 11.2, lineSpacing: 4),
+          textAlign: pw.TextAlign.justify,
+        ),
+        pw.SizedBox(height: 13),
+      ],
+      pw.Spacer(),
+      _footer(strings.get('pdfFooter')),
+    ],
+  );
+
+  /// A single-page PDF with just the cover letter -- for downloading the
+  /// letter on its own, separate from the full application kit.
+  static Future<Uint8List> buildLetterPdf(ApplicationKitData data) async {
+    final setup = await _newDocument(data);
+    setup.document.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.fromLTRB(48, 44, 48, 42),
+        theme: setup.theme,
+        build: (context) =>
+            _letterPageContent(setup.strings, data, setup.generatedDate),
+      ),
+    );
+    return setup.document.save();
+  }
+
+  static Future<Uint8List> buildPdf(ApplicationKitData data) async {
+    final setup = await _newDocument(data);
+    final document = setup.document;
+    final theme = setup.theme;
+    final strings = setup.strings;
+    final generatedDate = setup.generatedDate;
 
     document.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(48, 44, 48, 42),
         theme: theme,
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _header(strings.get('pdfCoverLetter'), generatedDate),
-            pw.SizedBox(height: 28),
-            pw.Text(
-              data.applicantName,
-              style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-            ),
-            if (data.email.isNotEmpty) pw.Text(data.email),
-            if (data.city.isNotEmpty) pw.Text(data.city),
-            pw.SizedBox(height: 26),
-            pw.Container(
-              width: double.infinity,
-              padding: const pw.EdgeInsets.all(14),
-              decoration: pw.BoxDecoration(
-                color: const PdfColor.fromInt(0xFFF0F6F2),
-                borderRadius: pw.BorderRadius.circular(8),
-              ),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  pw.Text(
-                    data.jobTitle,
-                    style: pw.TextStyle(
-                      fontSize: 15,
-                      fontWeight: pw.FontWeight.bold,
-                      color: const PdfColor.fromInt(0xFF2F6B55),
-                    ),
-                  ),
-                  pw.SizedBox(height: 3),
-                  pw.Text('${data.company} - ${data.jobLocation}'),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 24),
-            for (final paragraph in data.coverLetter.split('\n\n')) ...[
-              pw.Text(
-                paragraph.trim(),
-                style: const pw.TextStyle(fontSize: 11.2, lineSpacing: 4),
-                textAlign: pw.TextAlign.justify,
-              ),
-              pw.SizedBox(height: 13),
-            ],
-            pw.Spacer(),
-            _footer(strings.get('pdfFooter')),
-          ],
-        ),
+        build: (context) =>
+            _letterPageContent(strings, data, generatedDate),
       ),
     );
 
