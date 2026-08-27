@@ -26,6 +26,7 @@ Verbindliche Regeln:
 - erfinde keine Kompetenz, Erfahrung, Zeitangabe, Sprache, Ausbildung oder Niveaustufe;
 - verwende "Unbekannt", wenn ein Niveau nicht angegeben ist;
 - verwende kurze, einheitliche Kompetenznamen, zum Beispiel Flutter, Python, SQL oder Deutsch;
+- gib Telefonnummer und Adresse nur zurück, wenn sie wörtlich im Lebenslauf stehen, sonst einen leeren String;
 - schreibe die Zusammenfassung auf Deutsch, sachlich und für das Profil wiederverwendbar;
 - begründe jede erkannte Kompetenz kurz mit Inhalt aus dem Lebenslauf;
 - nenne fehlende oder mehrdeutige wichtige Angaben im Feld warnings.`,
@@ -47,6 +48,7 @@ Mandatory rules:
 - do not invent skills, experience, dates, languages, education or proficiency levels;
 - use "Unknown" when a level is not stated;
 - use short canonical skill names such as Flutter, Python, SQL or German;
+- only return a phone number or address if it is written verbatim in the CV, otherwise an empty string;
 - write the summary in English, factual and reusable in the profile;
 - support every detected skill with short evidence from the CV;
 - list important missing or ambiguous information in warnings.`,
@@ -68,6 +70,7 @@ Règles obligatoires :
 - n’invente aucune compétence, expérience, date, langue, formation ou niveau ;
 - indique "Inconnu" lorsqu’un niveau n’est pas écrit ;
 - conserve des noms de compétences courts et canoniques, par exemple Flutter, Python, SQL ou Deutsch ;
+- ne renvoie un numéro de téléphone ou une adresse que s'ils figurent textuellement dans le CV, sinon une chaîne vide ;
 - le résumé doit être en français, factuel et réutilisable dans le profil ;
 - les preuves doivent être courtes et provenir du CV ;
 - signale dans warnings les informations importantes absentes ou ambiguës.`,
@@ -84,6 +87,14 @@ const analysisSchema = {
     summary: {
       type: 'string',
       description: 'Professional summary in the requested language, grounded only in the CV, maximum 500 characters.',
+    },
+    phone: {
+      type: 'string',
+      description: 'Phone number exactly as written in the CV header, or an empty string if none is present.',
+    },
+    address: {
+      type: 'string',
+      description: 'Postal address exactly as written in the CV header (street, postal code, city), or an empty string if none is present.',
     },
     skills: {
       type: 'array',
@@ -148,6 +159,8 @@ const analysisSchema = {
   },
   required: [
     'summary',
+    'phone',
+    'address',
     'skills',
     'languages',
     'experiences',
@@ -318,6 +331,8 @@ function normalizeAnalysis(value: unknown, unknownLabel: string) {
   })
   return {
     summary: clean(raw.summary, 500),
+    phone: clean(raw.phone, 40),
+    address: clean(raw.address, 200),
     skills,
     languages,
     experiences,
@@ -366,7 +381,7 @@ Deno.serve(async (request) => {
 
   const { data: profile, error: profileError } = await client
     .from('profiles')
-    .select('cv_path,cv_ai_consent_at,full_name,professional_summary,degree,university,skills')
+    .select('cv_path,cv_ai_consent_at,full_name,professional_summary,degree,university,skills,phone,address')
     .eq('id', authData.user.id)
     .maybeSingle()
   if (profileError || !profile?.cv_path) {
@@ -430,6 +445,8 @@ Deno.serve(async (request) => {
 Return ONLY one valid JSON object, without Markdown or commentary, with exactly this structure:
 {
   "summary": "",
+  "phone": "",
+  "address": "",
   "skills": [{"name": "", "level": "", "evidence": ""}],
   "languages": [{"language": "", "level": "", "evidence": ""}],
   "experiences": [{"title": "", "organization": "", "period": "", "highlights": [""]}],
@@ -496,6 +513,8 @@ Use empty arrays when the CV contains no item for a list.`
     if (!clean(profile.professional_summary)) updates.professional_summary = analysis.summary
     if (!clean(profile.degree)) updates.degree = analysis.suggestedDegree
     if (!clean(profile.university)) updates.university = analysis.suggestedUniversity
+    if (!clean(profile.phone) && analysis.phone) updates.phone = analysis.phone
+    if (!clean(profile.address) && analysis.address) updates.address = analysis.address
 
     const { data: updated, error: updateError } = await client
       .from('profiles')

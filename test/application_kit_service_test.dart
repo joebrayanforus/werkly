@@ -13,6 +13,8 @@ void main() {
       ApplicationKitData(
         applicantName: 'Alex Martin',
         email: 'alex@example.com',
+        phone: '',
+        address: '',
         degree: 'Master Informatik',
         university: 'TU München',
         city: 'München',
@@ -44,6 +46,8 @@ void main() {
       final data = ApplicationKitData(
         applicantName: 'Alex Martin',
         email: 'alex@example.com',
+        phone: '',
+        address: '',
         degree: 'Master Informatik',
         university: 'TU München',
         city: 'München',
@@ -71,6 +75,8 @@ void main() {
       ApplicationKitData(
         applicantName: 'Alex Martin',
         email: 'alex@example.com',
+        phone: '',
+        address: '',
         degree: 'Master Informatik',
         university: 'TU München',
         city: 'München',
@@ -116,6 +122,8 @@ void main() {
         ApplicationKitData(
           applicantName: 'Alex Martin',
           email: 'alex@example.com',
+          phone: '',
+          address: '',
           degree: 'Master Informatik',
           university: 'TU München',
           city: 'München',
@@ -142,6 +150,47 @@ void main() {
         greaterThanOrEqualTo(2),
         reason: 'a letter this long must flow onto a second page, not be cut off',
       );
+    },
+  );
+
+  ApplicationKitData letterData({required String phone, required String address}) =>
+      ApplicationKitData(
+        applicantName: 'Alex Martin',
+        email: 'alex@example.com',
+        phone: phone,
+        address: address,
+        degree: 'Master Informatik',
+        university: 'TU München',
+        city: 'München',
+        summary: 'Flutter developer with practical project experience.',
+        profileSkills: const ['Flutter', 'Dart', 'Git'],
+        jobTitle: 'Werkstudent Software Engineering',
+        company: 'Example GmbH',
+        jobLocation: 'München',
+        jobTags: const ['Flutter', 'REST API', 'Git'],
+        sourceUrl: 'https://example.com/job',
+        coverLetter:
+            'Sehr geehrte Damen und Herren,\n\nmit großem Interesse bewerbe ich mich.\n\nMit freundlichen Grüßen\nAlex Martin',
+        generatedAt: DateTime.utc(2026, 8, 9),
+        language: AppLanguage.de,
+      );
+
+  test(
+    'builds successfully whether or not phone/address are filled in',
+    () async {
+      final withContactDetails = await ApplicationKitService.buildLetterPdf(
+        letterData(phone: '+49 151 23456789', address: 'Musterstraße 12, 80331 München'),
+      );
+      final withoutContactDetails = await ApplicationKitService.buildLetterPdf(
+        letterData(phone: '', address: ''),
+      );
+
+      expect(String.fromCharCodes(withContactDetails.take(4)), '%PDF');
+      expect(String.fromCharCodes(withoutContactDetails.take(4)), '%PDF');
+      // A user who never filled these in shouldn't get blank lines/extra
+      // spacing where they'd render -- the `if (x.isNotEmpty)` guards in
+      // _letterWidgets mean the PDF is meaningfully smaller without them.
+      expect(withoutContactDetails.length, lessThan(withContactDetails.length));
     },
   );
 }

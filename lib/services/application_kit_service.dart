@@ -9,6 +9,8 @@ class ApplicationKitData {
   const ApplicationKitData({
     required this.applicantName,
     required this.email,
+    required this.phone,
+    required this.address,
     required this.degree,
     required this.university,
     required this.city,
@@ -26,6 +28,8 @@ class ApplicationKitData {
 
   final String applicantName;
   final String email;
+  final String phone;
+  final String address;
   final String degree;
   final String university;
   final String city;
@@ -122,6 +126,8 @@ class ApplicationKitService {
       data.applicantName,
       style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
     ),
+    if (data.address.isNotEmpty) pw.Text(data.address),
+    if (data.phone.isNotEmpty) pw.Text(data.phone),
     if (data.email.isNotEmpty) pw.Text(data.email),
     if (data.city.isNotEmpty) pw.Text(data.city),
     pw.SizedBox(height: 26),

@@ -1743,6 +1743,8 @@ class _HomePageState extends State<HomePage> {
         ? context.tr('guestApplicantName')
         : _profile.fullName.trim(),
     email: Supabase.instance.client.auth.currentUser?.email ?? '',
+    phone: _profile.phone,
+    address: _profile.address,
     degree: _profile.degree,
     university: _profile.university,
     city: _profile.city,
@@ -1917,6 +1919,8 @@ class _HomePageState extends State<HomePage> {
     final university = TextEditingController(text: _profile.university);
     final degree = TextEditingController(text: _profile.degree);
     final city = TextEditingController(text: _profile.city);
+    final phone = TextEditingController(text: _profile.phone);
+    final address = TextEditingController(text: _profile.address);
     final summary = TextEditingController(text: _profile.professionalSummary);
     final skills = TextEditingController(text: _profile.skills.join(', '));
     var prefersRemote = _profile.preferences['remote'] == true;
@@ -1955,6 +1959,21 @@ class _HomePageState extends State<HomePage> {
                   TextField(
                     controller: city,
                     decoration: InputDecoration(labelText: context.tr('city')),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: address,
+                    decoration: InputDecoration(
+                      labelText: context.tr('address'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: phone,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: context.tr('phone'),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -2000,6 +2019,8 @@ class _HomePageState extends State<HomePage> {
                 if (university.text.trim().isNotEmpty) completion += 10;
                 if (degree.text.trim().isNotEmpty) completion += 10;
                 if (city.text.trim().isNotEmpty) completion += 5;
+                if (address.text.trim().isNotEmpty) completion += 5;
+                if (phone.text.trim().isNotEmpty) completion += 5;
                 if (summary.text.trim().isNotEmpty) completion += 20;
                 if (parsedSkills.isNotEmpty) completion += 15;
                 if (_profile.cvPath != null) completion += 10;
@@ -2010,6 +2031,8 @@ class _HomePageState extends State<HomePage> {
                     university: university.text,
                     degree: degree.text,
                     city: city.text,
+                    phone: phone.text,
+                    address: address.text,
                     professionalSummary: summary.text,
                     skills: parsedSkills,
                     preferences: {
@@ -2030,6 +2053,8 @@ class _HomePageState extends State<HomePage> {
     university.dispose();
     degree.dispose();
     city.dispose();
+    address.dispose();
+    phone.dispose();
     summary.dispose();
     skills.dispose();
     if (result == null) return;
