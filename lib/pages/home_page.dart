@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -21,6 +22,7 @@ import '../services/german_city_service.dart';
 import '../services/interview_prep_service.dart';
 import '../services/job_description_formatter.dart';
 import '../services/notification_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/saved_search_service.dart';
 
 part 'home/navigation.dart';
@@ -425,6 +427,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final _repository = WerklyRepository();
+  late final _pushService = PushNotificationService(_repository);
   final _commuteService = CommuteService();
   final _savedSearchService = const SavedSearchService();
   final Map<int, CommuteEstimate> _commuteEstimates = {};
@@ -453,6 +456,7 @@ class _HomePageState extends State<HomePage> {
   List<WerklyNotification> _notifications = const [];
   List<SavedJobSearch> _savedSearches = const [];
   bool _systemNotificationsEnabled = false;
+  bool _pushSubscribed = false;
 
   int get _unreadNotificationCount =>
       _notifications.where((item) => item.unread && item.isDue()).length;
@@ -465,6 +469,11 @@ class _HomePageState extends State<HomePage> {
       _handleOpenedNotification,
     );
     _loadWorkspace();
+    if (kIsWeb) {
+      _pushService.isSubscribed().then((subscribed) {
+        if (mounted) setState(() => _pushSubscribed = subscribed);
+      });
+    }
   }
 
   @override
@@ -795,6 +804,37 @@ class _HomePageState extends State<HomePage> {
         );
       }
     }
+  }
+
+  Future<void> _togglePushNotifications() async {
+    if (_repository.currentUser == null) {
+      await _openAuth();
+      if (!mounted || _repository.currentUser == null) return;
+    }
+    if (_pushSubscribed) {
+      await _pushService.unsubscribe();
+      if (!mounted) return;
+      setState(() => _pushSubscribed = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.tr('pushDisabled'))));
+      return;
+    }
+    final result = await _pushService.subscribe();
+    if (!mounted) return;
+    if (result.succeeded) {
+      setState(() => _pushSubscribed = true);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.tr('pushEnabled'))));
+      return;
+    }
+    final message = switch (result.error) {
+      'denied' => context.tr('pushPermissionDenied'),
+      'unsupported' => context.tr('pushUnsupported'),
+      _ => context.tr('pushSubscribeFailed'),
+    };
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _editPreferences() async {
@@ -2647,6 +2687,8 @@ class _HomePageState extends State<HomePage> {
                                   isAnalyzingCv: _isAnalyzingCv,
                                   onEditProfile: _editProfile,
                                   onEditPreferences: _editPreferences,
+                                  pushSubscribed: _pushSubscribed,
+                                  onTogglePush: _togglePushNotifications,
                                   onOptimizeCv: () => _showAssistant(
                                     context.tr('assistantCvPrompt'),
                                   ),

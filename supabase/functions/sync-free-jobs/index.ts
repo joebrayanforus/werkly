@@ -870,6 +870,11 @@ Deno.serve(async (request) => {
   const orderedCandidates = candidates
     .sort((left, right) => sourcePriority(left.source) - sourcePriority(right.source))
 
+  // Job IDs that are genuinely new this run (never seen before, not just a
+  // refresh of an already-active listing) -- handed to notify-job-matches
+  // at the end so it only ever pushes about jobs a user hasn't seen yet.
+  const newJobIds: number[] = []
+
   for (const provider of orderedCandidates) {
     const { source, fetched } = provider
     let deduplicated = 0
@@ -881,6 +886,11 @@ Deno.serve(async (request) => {
       }
       return true
     })
+    const newFingerprintsThisProvider = new Set(
+      providerRows
+        .map(jobFingerprint)
+        .filter((fingerprint) => !persistedFingerprintOwners.has(fingerprint)),
+    )
     let upsertError = ''
     for (let rowIndex = 0; rowIndex < providerRows.length; rowIndex += 100) {
       const batch = providerRows.slice(rowIndex, rowIndex + 100).map((row) => ({
@@ -888,13 +898,19 @@ Deno.serve(async (request) => {
         last_seen_at: runStarted,
         fingerprint: jobFingerprint(row),
       }))
-      const { error } = await admin.from('jobs').upsert(batch, {
-        onConflict: 'source,external_id',
-      })
+      const { data: upserted, error } = await admin
+        .from('jobs')
+        .upsert(batch, { onConflict: 'source,external_id' })
+        .select('id, external_id, fingerprint')
       if (error) {
         upsertError = error.message
         console.error(`${source} upsert failed`, error)
         break
+      }
+      for (const row of upserted ?? []) {
+        if (row.fingerprint && newFingerprintsThisProvider.has(row.fingerprint)) {
+          newJobIds.push(row.id)
+        }
       }
     }
     if (upsertError) {
@@ -980,11 +996,31 @@ Deno.serve(async (request) => {
     }, { status: 409, headers: corsHeaders })
   }
 
+  // Best-effort: a failure here must never turn a successful job sync into
+  // an error response, so it's awaited but its result is only logged.
+  if (newJobIds.length > 0) {
+    try {
+      const notifyUrl = `${Deno.env.get('SUPABASE_URL')}/functions/v1/notify-job-matches`
+      const notifyResponse = await fetch(notifyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminKey}` },
+        body: JSON.stringify({ jobIds: newJobIds }),
+        signal: AbortSignal.timeout(20_000),
+      })
+      if (!notifyResponse.ok) {
+        console.error('notify-job-matches responded with', notifyResponse.status)
+      }
+    } catch (error) {
+      console.error('notify-job-matches trigger failed', error)
+    }
+  }
+
   return Response.json({
     imported: rows.length,
     active: currentActiveCount,
     cached: false,
     sources: details,
+    newJobs: newJobIds.length,
   }, {
     headers: corsHeaders,
   })
