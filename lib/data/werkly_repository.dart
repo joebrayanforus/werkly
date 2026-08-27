@@ -51,6 +51,8 @@ class UserProfileData {
     required this.university,
     required this.degree,
     required this.city,
+    required this.phone,
+    required this.address,
     required this.professionalSummary,
     required this.skills,
     required this.preferences,
@@ -67,6 +69,8 @@ class UserProfileData {
     university: '',
     degree: '',
     city: 'München',
+    phone: '',
+    address: '',
     professionalSummary: '',
     skills: [],
     preferences: {},
@@ -84,6 +88,8 @@ class UserProfileData {
       university: (row['university'] as String? ?? '').trim(),
       degree: (row['degree'] as String? ?? '').trim(),
       city: (row['city'] as String? ?? 'München').trim(),
+      phone: (row['phone'] as String? ?? '').trim(),
+      address: (row['address'] as String? ?? '').trim(),
       professionalSummary: (row['professional_summary'] as String? ?? '')
           .trim(),
       skills: rawSkills is List
@@ -113,6 +119,8 @@ class UserProfileData {
   final String university;
   final String degree;
   final String city;
+  final String phone;
+  final String address;
   final String professionalSummary;
   final List<String> skills;
   final Map<String, dynamic> preferences;
@@ -128,6 +136,8 @@ class UserProfileData {
     String? university,
     String? degree,
     String? city,
+    String? phone,
+    String? address,
     String? professionalSummary,
     List<String>? skills,
     Map<String, dynamic>? preferences,
@@ -142,6 +152,8 @@ class UserProfileData {
     university: university ?? this.university,
     degree: degree ?? this.degree,
     city: city ?? this.city,
+    phone: phone ?? this.phone,
+    address: address ?? this.address,
     professionalSummary: professionalSummary ?? this.professionalSummary,
     skills: skills ?? this.skills,
     preferences: preferences ?? this.preferences,
@@ -158,6 +170,8 @@ class UserProfileData {
     'university': university.trim(),
     'degree': degree.trim(),
     'city': city.trim(),
+    'phone': phone.trim(),
+    'address': address.trim(),
     'professional_summary': professionalSummary.trim(),
     'skills': skills
         .map((skill) => {'name': skill.trim(), 'level': 'declared'})

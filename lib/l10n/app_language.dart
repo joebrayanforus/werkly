@@ -1145,6 +1145,8 @@ class AppStrings {
     'university': ['Université', 'Hochschule', 'University'],
     'education': ['Formation', 'Ausbildung', 'Education'],
     'city': ['Ville', 'Stadt', 'City'],
+    'phone': ['Téléphone', 'Telefon', 'Phone'],
+    'address': ['Adresse', 'Adresse', 'Address'],
     'commaSkills': [
       'Compétences séparées par des virgules',
       'Kompetenzen durch Kommas getrennt',

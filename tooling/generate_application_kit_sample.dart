@@ -10,6 +10,8 @@ Future<void> main() async {
     ApplicationKitData(
       applicantName: 'Alex Martin',
       email: 'alex.martin@example.com',
+      phone: '+49 151 23456789',
+      address: 'Musterstraße 12, 80331 München',
       degree: 'Master Informatik',
       university: 'Technische Universität München',
       city: 'München',
