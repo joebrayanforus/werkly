@@ -106,15 +106,14 @@ class ApplicationKitService {
     );
   }
 
-  static pw.Widget _letterPageContent(
-    AppStrings strings,
-    ApplicationKitData data,
-    String generatedDate,
-  ) => pw.Column(
+  /// The letter's own content -- sender info, the job box, the paragraphs.
+  /// Deliberately has no Werkly branding: this is the applicant's own
+  /// letter, not a Werkly document, and should never look like one whether
+  /// it's read as page 1 of the full kit or downloaded on its own.
+  static pw.Widget _letterBody(ApplicationKitData data) => pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
+    mainAxisSize: pw.MainAxisSize.min,
     children: [
-      _header(strings.get('pdfCoverLetter'), generatedDate),
-      pw.SizedBox(height: 28),
       pw.Text(
         data.applicantName,
         style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
@@ -154,8 +153,53 @@ class ApplicationKitService {
         ),
         pw.SizedBox(height: 13),
       ],
+    ],
+  );
+
+  /// Page 1 of the full kit: same letter body, but framed with the Werkly
+  /// header/footer since the kit as a whole is explicitly a Werkly-prepared
+  /// bundle (page 2 is a Werkly profile summary, never meant to be sent as
+  /// a document in its own right).
+  static pw.Widget _letterPageContent(
+    AppStrings strings,
+    ApplicationKitData data,
+    String generatedDate,
+  ) => pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      _header(strings.get('pdfCoverLetter'), generatedDate),
+      pw.SizedBox(height: 28),
+      _letterBody(data),
       pw.Spacer(),
       _footer(strings.get('pdfFooter')),
+    ],
+  );
+
+  /// The standalone letter download: just the letter, formatted like a real
+  /// cover letter (city + date in the corner, the way a German Anschreiben
+  /// conventionally opens) rather than under a Werkly letterhead -- this is
+  /// the file someone might actually send to an employer as-is.
+  static pw.Widget _standaloneLetterContent(
+    ApplicationKitData data,
+    String generatedDate,
+  ) => pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.start,
+    children: [
+      pw.Align(
+        alignment: pw.Alignment.topRight,
+        child: pw.Text(
+          [
+            data.city,
+            generatedDate,
+          ].where((value) => value.trim().isNotEmpty).join(', '),
+          style: const pw.TextStyle(
+            fontSize: 10,
+            color: PdfColor.fromInt(0xFF718079),
+          ),
+        ),
+      ),
+      pw.SizedBox(height: 20),
+      _letterBody(data),
     ],
   );
 
@@ -169,7 +213,7 @@ class ApplicationKitService {
         margin: const pw.EdgeInsets.fromLTRB(48, 44, 48, 42),
         theme: setup.theme,
         build: (context) =>
-            _letterPageContent(setup.strings, data, setup.generatedDate),
+            _standaloneLetterContent(data, setup.generatedDate),
       ),
     );
     return setup.document.save();

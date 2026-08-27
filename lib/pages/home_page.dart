@@ -1749,7 +1749,33 @@ class _HomePageState extends State<HomePage> {
       .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
       .replaceAll(RegExp(r'^_+|_+$'), '');
 
+  Future<bool> _confirmPlaceholderNameDownload() async {
+    if (!_isGuestProfileName(_profile.fullName)) return true;
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('letterNeedsNameTitle')),
+        content: Text(context.tr('letterNeedsNameBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('letterDownloadAnyway')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('signIn')),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true && mounted) {
+      await _openAuth();
+    }
+    return proceed == true;
+  }
+
   Future<void> _downloadLetter(Job job, String letter) async {
+    if (!await _confirmPlaceholderNameDownload() || !mounted) return;
     final data = _applicationKitData(job, coverLetterOverride: letter);
     final pdf = ApplicationKitService.buildLetterPdf(data);
     final safeCompany = _safeFileToken(job.company);

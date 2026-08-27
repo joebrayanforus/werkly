@@ -1549,6 +1549,21 @@ class AppStrings {
       'Herunterladen',
       'Download',
     ],
+    'letterNeedsNameTitle': [
+      'Ajoute ton nom avant de télécharger',
+      'Füge zuerst deinen Namen hinzu',
+      'Add your name first',
+    ],
+    'letterNeedsNameBody': [
+      'Sans compte, la lettre est signée « Candidat·e Werkly » au lieu de ton vrai nom. Connecte-toi et complète ton profil pour que la lettre te représente vraiment.',
+      'Ohne Konto wird das Anschreiben mit „Werkly-Bewerber/in“ statt mit deinem echten Namen unterschrieben. Melde dich an und vervollständige dein Profil, damit das Anschreiben wirklich dich zeigt.',
+      'Without an account, the letter is signed "Werkly applicant" instead of your real name. Sign in and complete your profile so the letter actually represents you.',
+    ],
+    'letterDownloadAnyway': [
+      'Télécharger quand même',
+      'Trotzdem herunterladen',
+      'Download anyway',
+    ],
     'copy': ['Copier', 'Kopieren', 'Copy'],
     'externalOpenFailed': [
       'Impossible d’ouvrir {provider}.',
