@@ -111,10 +111,10 @@ class _FirstRunTutorialSheetState extends State<_FirstRunTutorialSheet> {
                         onPageChanged: (value) => setState(() => _page = value),
                         itemBuilder: (context, index) {
                           final item = pages[index];
-                          return Padding(
+                          return SingleChildScrollView(
                             padding: const EdgeInsets.fromLTRB(28, 18, 28, 10),
                             child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
                                 Container(
                                   width: 112,
