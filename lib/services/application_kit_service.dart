@@ -106,54 +106,60 @@ class ApplicationKitService {
     );
   }
 
-  /// The letter's own content -- sender info, the job box, the paragraphs.
+  /// The letter's own content -- sender info, the job box, the paragraphs --
+  /// as a flat widget list so a [pw.MultiPage] can break between them.
   /// Deliberately has no Werkly branding: this is the applicant's own
   /// letter, not a Werkly document, and should never look like one whether
   /// it's read as page 1 of the full kit or downloaded on its own.
+  static List<pw.Widget> _letterWidgets(ApplicationKitData data) => [
+    pw.Text(
+      data.applicantName,
+      style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+    ),
+    if (data.email.isNotEmpty) pw.Text(data.email),
+    if (data.city.isNotEmpty) pw.Text(data.city),
+    pw.SizedBox(height: 26),
+    pw.Container(
+      width: double.infinity,
+      padding: const pw.EdgeInsets.all(14),
+      decoration: pw.BoxDecoration(
+        color: const PdfColor.fromInt(0xFFF0F6F2),
+        borderRadius: pw.BorderRadius.circular(8),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            data.jobTitle,
+            style: pw.TextStyle(
+              fontSize: 15,
+              fontWeight: pw.FontWeight.bold,
+              color: const PdfColor.fromInt(0xFF2F6B55),
+            ),
+          ),
+          pw.SizedBox(height: 3),
+          pw.Text('${data.company} - ${data.jobLocation}'),
+        ],
+      ),
+    ),
+    pw.SizedBox(height: 24),
+    for (final paragraph in data.coverLetter.split('\n\n')) ...[
+      pw.Text(
+        paragraph.trim(),
+        style: const pw.TextStyle(fontSize: 11.2, lineSpacing: 4),
+        textAlign: pw.TextAlign.justify,
+      ),
+      pw.SizedBox(height: 13),
+    ],
+  ];
+
+  /// Same content as [_letterWidgets], boxed into one widget for the full
+  /// kit's fixed-height page 1, which only ever holds the bounded-length
+  /// static template so overflow isn't a concern there.
   static pw.Widget _letterBody(ApplicationKitData data) => pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
     mainAxisSize: pw.MainAxisSize.min,
-    children: [
-      pw.Text(
-        data.applicantName,
-        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-      ),
-      if (data.email.isNotEmpty) pw.Text(data.email),
-      if (data.city.isNotEmpty) pw.Text(data.city),
-      pw.SizedBox(height: 26),
-      pw.Container(
-        width: double.infinity,
-        padding: const pw.EdgeInsets.all(14),
-        decoration: pw.BoxDecoration(
-          color: const PdfColor.fromInt(0xFFF0F6F2),
-          borderRadius: pw.BorderRadius.circular(8),
-        ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              data.jobTitle,
-              style: pw.TextStyle(
-                fontSize: 15,
-                fontWeight: pw.FontWeight.bold,
-                color: const PdfColor.fromInt(0xFF2F6B55),
-              ),
-            ),
-            pw.SizedBox(height: 3),
-            pw.Text('${data.company} - ${data.jobLocation}'),
-          ],
-        ),
-      ),
-      pw.SizedBox(height: 24),
-      for (final paragraph in data.coverLetter.split('\n\n')) ...[
-        pw.Text(
-          paragraph.trim(),
-          style: const pw.TextStyle(fontSize: 11.2, lineSpacing: 4),
-          textAlign: pw.TextAlign.justify,
-        ),
-        pw.SizedBox(height: 13),
-      ],
-    ],
+    children: _letterWidgets(data),
   );
 
   /// Page 1 of the full kit: same letter body, but framed with the Werkly
@@ -178,42 +184,43 @@ class ApplicationKitService {
   /// The standalone letter download: just the letter, formatted like a real
   /// cover letter (city + date in the corner, the way a German Anschreiben
   /// conventionally opens) rather than under a Werkly letterhead -- this is
-  /// the file someone might actually send to an employer as-is.
-  static pw.Widget _standaloneLetterContent(
+  /// the file someone might actually send to an employer as-is. Returned as
+  /// a flat list (not one boxed widget) so [pw.MultiPage] can flow it onto
+  /// as many pages as the letter actually needs instead of clipping it.
+  static List<pw.Widget> _standaloneLetterWidgets(
     ApplicationKitData data,
     String generatedDate,
-  ) => pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      pw.Align(
-        alignment: pw.Alignment.topRight,
-        child: pw.Text(
-          [
-            data.city,
-            generatedDate,
-          ].where((value) => value.trim().isNotEmpty).join(', '),
-          style: const pw.TextStyle(
-            fontSize: 10,
-            color: PdfColor.fromInt(0xFF718079),
-          ),
+  ) => [
+    pw.Align(
+      alignment: pw.Alignment.topRight,
+      child: pw.Text(
+        [
+          data.city,
+          generatedDate,
+        ].where((value) => value.trim().isNotEmpty).join(', '),
+        style: const pw.TextStyle(
+          fontSize: 10,
+          color: PdfColor.fromInt(0xFF718079),
         ),
       ),
-      pw.SizedBox(height: 20),
-      _letterBody(data),
-    ],
-  );
+    ),
+    pw.SizedBox(height: 20),
+    ..._letterWidgets(data),
+  ];
 
-  /// A single-page PDF with just the cover letter -- for downloading the
-  /// letter on its own, separate from the full application kit.
+  /// A PDF with just the cover letter -- for downloading the letter on its
+  /// own, separate from the full application kit. Paginates across multiple
+  /// pages (via [pw.MultiPage]) since a letter's length isn't bounded the
+  /// way the kit's static template is.
   static Future<Uint8List> buildLetterPdf(ApplicationKitData data) async {
     final setup = await _newDocument(data);
     setup.document.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(48, 44, 48, 42),
         theme: setup.theme,
         build: (context) =>
-            _standaloneLetterContent(data, setup.generatedDate),
+            _standaloneLetterWidgets(data, setup.generatedDate),
       ),
     );
     return setup.document.save();
