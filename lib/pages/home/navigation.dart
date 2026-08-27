@@ -452,12 +452,16 @@ class _UserRow extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text(
-          name,
-          style: TextStyle(
-            color: light ? Colors.white : _ink,
-            fontWeight: FontWeight.w700,
-            fontSize: 12,
+        Flexible(
+          child: Text(
+            name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: light ? Colors.white : _ink,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
           ),
         ),
       ],

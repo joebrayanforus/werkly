@@ -1784,6 +1784,13 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (proceed != true && mounted) {
+      // _downloadLetter is only ever called from the Download button inside
+      // _showLetter's own AlertDialog, which is still open at this point (it
+      // never closed itself before calling us). Close it before pushing the
+      // full-screen auth flow -- otherwise, when sign-in pops back, the app
+      // is left stuck under a dialog route that's technically still open
+      // but no longer interactive, and the user has to reload the page.
+      Navigator.of(context).pop();
       await _openAuth();
     }
     return proceed == true;
