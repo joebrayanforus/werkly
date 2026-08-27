@@ -2205,6 +2205,46 @@ class AppStrings {
       'Melde dich an, um eine generierte Antwort zu melden.',
       'Sign in to report a generated response.',
     ],
+    'errorSignInPush': [
+      'Connecte-toi pour activer les notifications.',
+      'Melde dich an, um Benachrichtigungen zu aktivieren.',
+      'Sign in to enable notifications.',
+    ],
+    'enableNotifications': [
+      'Activer les notifications',
+      'Benachrichtigungen aktivieren',
+      'Enable notifications',
+    ],
+    'disableNotifications': [
+      'Désactiver les notifications',
+      'Benachrichtigungen deaktivieren',
+      'Disable notifications',
+    ],
+    'pushEnabled': [
+      'Notifications activées : tu seras alerté·e des nouvelles offres qui te correspondent.',
+      'Benachrichtigungen aktiviert: Du wirst über neue passende Stellen informiert.',
+      'Notifications enabled — you\'ll be alerted about new matching jobs.',
+    ],
+    'pushDisabled': [
+      'Notifications désactivées.',
+      'Benachrichtigungen deaktiviert.',
+      'Notifications disabled.',
+    ],
+    'pushPermissionDenied': [
+      'Autorisation refusée. Active les notifications dans les réglages de ton navigateur pour réessayer.',
+      'Berechtigung verweigert. Aktiviere Benachrichtigungen in deinen Browser-Einstellungen, um es erneut zu versuchen.',
+      'Permission denied. Enable notifications in your browser settings to try again.',
+    ],
+    'pushUnsupported': [
+      'Les notifications ne sont pas prises en charge sur cet appareil ou ce navigateur.',
+      'Benachrichtigungen werden auf diesem Gerät oder Browser nicht unterstützt.',
+      'Notifications aren\'t supported on this device or browser.',
+    ],
+    'pushSubscribeFailed': [
+      'Impossible d\'activer les notifications pour le moment. Réessaie plus tard.',
+      'Benachrichtigungen konnten gerade nicht aktiviert werden. Versuche es später erneut.',
+      'Couldn\'t enable notifications right now. Try again later.',
+    ],
     'errorRefreshRejected': [
       'Mise à jour refusée ({status}).',
       'Aktualisierung abgelehnt ({status}).',

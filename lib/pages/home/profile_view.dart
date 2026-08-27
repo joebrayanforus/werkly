@@ -10,6 +10,8 @@ class _ProfileView extends StatelessWidget {
     required this.isAnalyzingCv,
     required this.onEditProfile,
     required this.onEditPreferences,
+    required this.pushSubscribed,
+    required this.onTogglePush,
     required this.onOptimizeCv,
     required this.onSignIn,
     required this.onSignOut,
@@ -28,6 +30,8 @@ class _ProfileView extends StatelessWidget {
   final bool isAnalyzingCv;
   final VoidCallback onEditProfile;
   final VoidCallback onEditPreferences;
+  final bool pushSubscribed;
+  final VoidCallback onTogglePush;
   final VoidCallback onOptimizeCv;
   final VoidCallback onSignIn;
   final VoidCallback onSignOut;
@@ -67,6 +71,8 @@ class _ProfileView extends StatelessWidget {
                             onUploadCv: onUploadCv,
                             onEditProfile: onEditProfile,
                             onEditPreferences: onEditPreferences,
+                            pushSubscribed: pushSubscribed,
+                            onTogglePush: onTogglePush,
                           ),
                         ),
                         const SizedBox(width: 18),
@@ -110,6 +116,8 @@ class _ProfileView extends StatelessWidget {
                       onUploadCv: onUploadCv,
                       onEditProfile: onEditProfile,
                       onEditPreferences: onEditPreferences,
+                      pushSubscribed: pushSubscribed,
+                      onTogglePush: onTogglePush,
                     ),
                     const SizedBox(height: 16),
                     _CvAnalysisCard(
@@ -151,12 +159,16 @@ class _ProfileSummary extends StatelessWidget {
     required this.onUploadCv,
     required this.onEditProfile,
     required this.onEditPreferences,
+    required this.pushSubscribed,
+    required this.onTogglePush,
   });
   final UserProfileData profile;
   final List<Job> jobs;
   final VoidCallback onUploadCv;
   final VoidCallback onEditProfile;
   final VoidCallback onEditPreferences;
+  final bool pushSubscribed;
+  final VoidCallback onTogglePush;
 
   @override
   Widget build(BuildContext context) {
@@ -235,6 +247,7 @@ class _ProfileSummary extends StatelessWidget {
                   onSelected: (action) => switch (action) {
                     'profile' => onEditProfile(),
                     'preferences' => onEditPreferences(),
+                    'push' => onTogglePush(),
                     _ => onUploadCv(),
                   },
                   itemBuilder: (context) => [
@@ -259,6 +272,24 @@ class _ProfileSummary extends StatelessWidget {
                         title: Text(context.tr('editPreferences')),
                       ),
                     ),
+                    if (kIsWeb)
+                      PopupMenuItem(
+                        value: 'push',
+                        child: ListTile(
+                          leading: Icon(
+                            pushSubscribed
+                                ? Icons.notifications_active_rounded
+                                : Icons.notifications_none_rounded,
+                          ),
+                          title: Text(
+                            context.tr(
+                              pushSubscribed
+                                  ? 'disableNotifications'
+                                  : 'enableNotifications',
+                            ),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ],

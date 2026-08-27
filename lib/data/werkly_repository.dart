@@ -672,6 +672,33 @@ class WerklyRepository {
     });
   }
 
+  Future<void> registerPushSubscription({
+    required String endpoint,
+    required String p256dh,
+    required String auth,
+  }) async {
+    final user = currentUser;
+    if (user == null) {
+      throw AuthException(_tr('errorSignInPush'));
+    }
+    await _client.from('push_subscriptions').upsert({
+      'user_id': user.id,
+      'endpoint': endpoint,
+      'p256dh': p256dh,
+      'auth': auth,
+    }, onConflict: 'user_id,endpoint');
+  }
+
+  Future<void> removePushSubscription(String endpoint) async {
+    final user = currentUser;
+    if (user == null) return;
+    await _client
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('endpoint', endpoint);
+  }
+
   Future<bool?> getAiPrivacyChoice() async {
     final preferences = await SharedPreferences.getInstance();
     return preferences.getBool('werkly_ai_privacy_accepted');
