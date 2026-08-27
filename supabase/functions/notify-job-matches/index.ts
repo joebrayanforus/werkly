@@ -24,14 +24,31 @@ type JobRow = {
   remote_type: string
 }
 
-function decodedRole(authorization: string): string {
+// Supabase projects on the newer key system issue an opaque `sb_secret_...`
+// service key instead of a JWT -- sync-free-jobs already resolves exactly
+// this value as `adminKey` and hands it here as a bearer token, so it must
+// be accepted directly, not decoded as a JWT. A legacy JWT-format service
+// role key (with a `role` claim) is still accepted as a fallback for
+// projects that haven't migrated.
+function isServiceRoleRequest(authorization: string): boolean {
+  const token = authorization.replace(/^Bearer\s+/i, '').trim()
+  if (!token) return false
+
+  let secretKeys: Record<string, string> = {}
   try {
-    const token = authorization.replace(/^Bearer\s+/i, '')
+    secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}')
+  } catch {
+    // Ignore a malformed or absent env value.
+  }
+  if (Object.values(secretKeys).includes(token)) return true
+  if (token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) return true
+
+  try {
     const payload = token.split('.')[1]
     const json = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
-    return typeof json.role === 'string' ? json.role : ''
+    return json.role === 'service_role'
   } catch {
-    return ''
+    return false
   }
 }
 
@@ -71,11 +88,11 @@ Deno.serve(async (request) => {
   }
 
   const authorization = request.headers.get('Authorization') ?? ''
-  // verify_jwt already confirmed this is a genuine Supabase-issued token;
-  // this only checks *which* one, since this function needs full read
-  // access across every user's profile/subscriptions and should only ever
-  // be called server-to-server by sync-free-jobs, not by an end user.
-  if (decodedRole(authorization) !== 'service_role') {
+  // No gateway JWT check (verify_jwt: false) since the caller presents an
+  // opaque secret key, not a JWT -- this app-level check is the only auth,
+  // and it restricts the caller to server-to-server calls from
+  // sync-free-jobs, never an end user.
+  if (!isServiceRoleRequest(authorization)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401, headers: corsHeaders })
   }
 
@@ -102,7 +119,13 @@ Deno.serve(async (request) => {
     return Response.json({ sent: 0, reason: 'no new jobs' }, { headers: corsHeaders })
   }
 
-  const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim()
+  let secretKeys: Record<string, string> = {}
+  try {
+    secretKeys = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') ?? '{}')
+  } catch {
+    // Ignore a malformed or absent env value.
+  }
+  const serviceRoleKey = (secretKeys.default ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'))?.trim()
   const url = Deno.env.get('SUPABASE_URL')?.trim()
   if (!serviceRoleKey || !url) {
     return Response.json({ error: 'Server configuration missing' }, { status: 503, headers: corsHeaders })
