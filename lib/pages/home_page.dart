@@ -1699,6 +1699,11 @@ class _HomePageState extends State<HomePage> {
             onPressed: () => Navigator.pop(context),
             child: Text(context.tr('close')),
           ),
+          OutlinedButton.icon(
+            onPressed: () => _downloadLetter(job, letter),
+            icon: const Icon(Icons.download_rounded),
+            label: Text(context.tr('downloadLetter')),
+          ),
           FilledButton.icon(
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: letter));
@@ -1717,7 +1722,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  ApplicationKitData _applicationKitData(Job job) => ApplicationKitData(
+  ApplicationKitData _applicationKitData(
+    Job job, {
+    String? coverLetterOverride,
+  }) => ApplicationKitData(
     applicantName: _isGuestProfileName(_profile.fullName)
         ? context.tr('guestApplicantName')
         : _profile.fullName.trim(),
@@ -1732,17 +1740,107 @@ class _HomePageState extends State<HomePage> {
     jobLocation: job.location,
     jobTags: job.tags,
     sourceUrl: job.sourceUrl,
-    coverLetter: _coverLetter(job),
+    coverLetter: coverLetterOverride ?? _coverLetter(job),
     generatedAt: DateTime.now(),
     language: AppLanguageController.language.value,
   );
 
+  String _safeFileToken(String value) => value
+      .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+
+  Future<bool> _confirmPlaceholderNameDownload() async {
+    if (!_isGuestProfileName(_profile.fullName)) return true;
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(context.tr('letterNeedsNameTitle')),
+        content: Text(context.tr('letterNeedsNameBody')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(context.tr('letterDownloadAnyway')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.tr('signIn')),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true && mounted) {
+      await _openAuth();
+    }
+    return proceed == true;
+  }
+
+  Future<void> _downloadLetter(Job job, String letter) async {
+    if (!await _confirmPlaceholderNameDownload() || !mounted) return;
+    final data = _applicationKitData(job, coverLetterOverride: letter);
+    final pdf = ApplicationKitService.buildLetterPdf(data);
+    final safeCompany = _safeFileToken(job.company);
+    final filename =
+        '${context.tr('applicationFilePrefix')}_${context.tr('pdfCoverLetter').toLowerCase()}_${safeCompany.isEmpty ? 'werkstudent' : safeCompany}.pdf';
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        insetPadding: const EdgeInsets.all(12),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          width: 760,
+          height: math.min(MediaQuery.sizeOf(context).height * .92, 820),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 8, 8, 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.picture_as_pdf_outlined, color: _green),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        context.trFormat('coverLetterFor', {
+                          'company': job.company,
+                        }),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: context.tr('close'),
+                      onPressed: () => Navigator.pop(dialogContext),
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: PdfPreview(
+                  build: (_) => pdf,
+                  pdfFileName: filename,
+                  canChangePageFormat: false,
+                  canChangeOrientation: false,
+                  canDebug: false,
+                  allowPrinting: true,
+                  allowSharing: true,
+                  loadingWidget: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _showApplicationKit(Job job) async {
     final data = _applicationKitData(job);
     final pdf = ApplicationKitService.buildPdf(data);
-    final safeCompany = job.company
-        .replaceAll(RegExp(r'[^a-zA-Z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
+    final safeCompany = _safeFileToken(job.company);
     final filename =
         '${context.tr('applicationFilePrefix')}_${safeCompany.isEmpty ? 'werkstudent' : safeCompany}.pdf';
     await showDialog<void>(
