@@ -1784,13 +1784,16 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (proceed != true && mounted) {
-      // _downloadLetter is only ever called from the Download button inside
-      // _showLetter's own AlertDialog, which is still open at this point (it
-      // never closed itself before calling us). Close it before pushing the
-      // full-screen auth flow -- otherwise, when sign-in pops back, the app
-      // is left stuck under a dialog route that's technically still open
-      // but no longer interactive, and the user has to reload the page.
-      Navigator.of(context).pop();
+      // _showLetter is always reached through a modal bottom sheet (the job
+      // detail sheet or the application prep sheet), and _downloadLetter is
+      // called from inside _showLetter's own AlertDialog without closing
+      // either first -- so at this point there are still two modal routes
+      // stacked on top of the base page. Popping just one (as an earlier fix
+      // here did) wasn't enough: the sheet underneath was still open, and
+      // pushing the full-screen auth flow on top of that stale stack left
+      // the app stuck-but-not-interactive once sign-in popped back, forcing
+      // a reload. Close everything back to the base page first.
+      Navigator.of(context).popUntil((route) => route.isFirst);
       await _openAuth();
     }
     return proceed == true;
