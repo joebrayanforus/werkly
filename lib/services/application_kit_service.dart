@@ -106,55 +106,52 @@ class ApplicationKitService {
     );
   }
 
-  /// The letter's own content -- sender info, the job box, the paragraphs.
-  /// Deliberately has no Werkly branding: this is the applicant's own
-  /// letter, not a Werkly document, and should never look like one whether
-  /// it's read as page 1 of the full kit or downloaded on its own.
-  static pw.Widget _letterBody(ApplicationKitData data) => pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    mainAxisSize: pw.MainAxisSize.min,
-    children: [
+  /// The letter's own content -- sender info, a proper subject line, then
+  /// the paragraphs -- as a flat widget list so a [pw.MultiPage] can break
+  /// between them. Deliberately has no Werkly branding: this is the
+  /// applicant's own letter, not a Werkly document, and should never look
+  /// like one whether it's read as page 1 of the full kit or downloaded on
+  /// its own. The subject line ("Bewerbung als ...") follows the standard
+  /// German Anschreiben convention (per Bundesagentur für Arbeit guidance)
+  /// instead of the earlier stylized info card.
+  static List<pw.Widget> _letterWidgets(
+    AppStrings strings,
+    ApplicationKitData data,
+  ) => [
+    pw.Text(
+      data.applicantName,
+      style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+    ),
+    if (data.email.isNotEmpty) pw.Text(data.email),
+    if (data.city.isNotEmpty) pw.Text(data.city),
+    pw.SizedBox(height: 26),
+    pw.Text(
+      strings.format('pdfObjectiveText', {
+        'job': data.jobTitle,
+        'company': data.company,
+      }),
+      style: pw.TextStyle(fontSize: 12.5, fontWeight: pw.FontWeight.bold),
+    ),
+    pw.SizedBox(height: 20),
+    for (final paragraph in data.coverLetter.split('\n\n')) ...[
       pw.Text(
-        data.applicantName,
-        style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
+        paragraph.trim(),
+        style: const pw.TextStyle(fontSize: 11.2, lineSpacing: 4),
+        textAlign: pw.TextAlign.justify,
       ),
-      if (data.email.isNotEmpty) pw.Text(data.email),
-      if (data.city.isNotEmpty) pw.Text(data.city),
-      pw.SizedBox(height: 26),
-      pw.Container(
-        width: double.infinity,
-        padding: const pw.EdgeInsets.all(14),
-        decoration: pw.BoxDecoration(
-          color: const PdfColor.fromInt(0xFFF0F6F2),
-          borderRadius: pw.BorderRadius.circular(8),
-        ),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              data.jobTitle,
-              style: pw.TextStyle(
-                fontSize: 15,
-                fontWeight: pw.FontWeight.bold,
-                color: const PdfColor.fromInt(0xFF2F6B55),
-              ),
-            ),
-            pw.SizedBox(height: 3),
-            pw.Text('${data.company} - ${data.jobLocation}'),
-          ],
-        ),
-      ),
-      pw.SizedBox(height: 24),
-      for (final paragraph in data.coverLetter.split('\n\n')) ...[
-        pw.Text(
-          paragraph.trim(),
-          style: const pw.TextStyle(fontSize: 11.2, lineSpacing: 4),
-          textAlign: pw.TextAlign.justify,
-        ),
-        pw.SizedBox(height: 13),
-      ],
+      pw.SizedBox(height: 13),
     ],
-  );
+  ];
+
+  /// Same content as [_letterWidgets], boxed into one widget for the full
+  /// kit's fixed-height page 1, which only ever holds the bounded-length
+  /// static template so overflow isn't a concern there.
+  static pw.Widget _letterBody(AppStrings strings, ApplicationKitData data) =>
+      pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        mainAxisSize: pw.MainAxisSize.min,
+        children: _letterWidgets(strings, data),
+      );
 
   /// Page 1 of the full kit: same letter body, but framed with the Werkly
   /// header/footer since the kit as a whole is explicitly a Werkly-prepared
@@ -169,7 +166,7 @@ class ApplicationKitService {
     children: [
       _header(strings.get('pdfCoverLetter'), generatedDate),
       pw.SizedBox(height: 28),
-      _letterBody(data),
+      _letterBody(strings, data),
       pw.Spacer(),
       _footer(strings.get('pdfFooter')),
     ],
@@ -178,42 +175,47 @@ class ApplicationKitService {
   /// The standalone letter download: just the letter, formatted like a real
   /// cover letter (city + date in the corner, the way a German Anschreiben
   /// conventionally opens) rather than under a Werkly letterhead -- this is
-  /// the file someone might actually send to an employer as-is.
-  static pw.Widget _standaloneLetterContent(
+  /// the file someone might actually send to an employer as-is. Returned as
+  /// a flat list (not one boxed widget) so [pw.MultiPage] can flow it onto
+  /// as many pages as the letter actually needs instead of clipping it.
+  static List<pw.Widget> _standaloneLetterWidgets(
+    AppStrings strings,
     ApplicationKitData data,
     String generatedDate,
-  ) => pw.Column(
-    crossAxisAlignment: pw.CrossAxisAlignment.start,
-    children: [
-      pw.Align(
-        alignment: pw.Alignment.topRight,
-        child: pw.Text(
-          [
-            data.city,
-            generatedDate,
-          ].where((value) => value.trim().isNotEmpty).join(', '),
-          style: const pw.TextStyle(
-            fontSize: 10,
-            color: PdfColor.fromInt(0xFF718079),
-          ),
+  ) => [
+    pw.Align(
+      alignment: pw.Alignment.topRight,
+      child: pw.Text(
+        [
+          data.city,
+          generatedDate,
+        ].where((value) => value.trim().isNotEmpty).join(', '),
+        style: const pw.TextStyle(
+          fontSize: 10,
+          color: PdfColor.fromInt(0xFF718079),
         ),
       ),
-      pw.SizedBox(height: 20),
-      _letterBody(data),
-    ],
-  );
+    ),
+    pw.SizedBox(height: 20),
+    ..._letterWidgets(strings, data),
+  ];
 
-  /// A single-page PDF with just the cover letter -- for downloading the
-  /// letter on its own, separate from the full application kit.
+  /// A PDF with just the cover letter -- for downloading the letter on its
+  /// own, separate from the full application kit. Paginates across multiple
+  /// pages (via [pw.MultiPage]) since a letter's length isn't bounded the
+  /// way the kit's static template is.
   static Future<Uint8List> buildLetterPdf(ApplicationKitData data) async {
     final setup = await _newDocument(data);
     setup.document.addPage(
-      pw.Page(
+      pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(48, 44, 48, 42),
         theme: setup.theme,
-        build: (context) =>
-            _standaloneLetterContent(data, setup.generatedDate),
+        build: (context) => _standaloneLetterWidgets(
+          setup.strings,
+          data,
+          setup.generatedDate,
+        ),
       ),
     );
     return setup.document.save();
