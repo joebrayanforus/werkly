@@ -227,7 +227,7 @@ Do not give definitive legal advice.`
         body: JSON.stringify({
           systemInstruction: { parts: [{ text: systemInstruction }] },
           contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { temperature: 0.3, maxOutputTokens: 1_200 },
+          generationConfig: { temperature: 0.3, maxOutputTokens: 2_400 },
         }),
         signal: AbortSignal.timeout(20_000),
       },
@@ -244,6 +244,9 @@ Do not give definitive legal advice.`
       ?.map((part: { text?: string }) => part.text ?? '')
       .join('\n')
       .trim()
+    if (result?.candidates?.[0]?.finishReason === 'MAX_TOKENS') {
+      console.error('Gemini assistant reply hit maxOutputTokens and was truncated')
+    }
     if (!reply) {
       return Response.json(
         { error: translatedError(language, 'empty') },
