@@ -1544,6 +1544,36 @@ class AppStrings {
       'KI derzeit nicht verfügbar: hier eine Schnellvorlage.',
       'AI unavailable right now — showing a quick template instead.',
     ],
+    'letterAiInstruction': [
+      "Rédige uniquement le corps d'une lettre de motivation pour cette offre, "
+          'prêt à être inséré tel quel dans un document final. Écris directement '
+          'en texte brut, sans astérisques ni aucune mise en forme markdown, sans '
+          "titre, sans note ou commentaire sur ta démarche, et sans bloc d'adresse, "
+          'date ou objet : le nom du candidat, le poste et l’entreprise sont déjà '
+          'affichés séparément, donc ne les répète pas et ne mets aucun texte entre '
+          'crochets. Commence directement par une formule de salutation, rédige 2 à '
+          '4 courts paragraphes séparés par une ligne vide, puis termine par une '
+          'formule de politesse suivie du prénom du candidat sur la ligne suivante.',
+      'Schreibe ausschließlich den Fließtext eines Anschreibens für diese '
+          'Stelle, fertig zum direkten Einfügen in ein finales Dokument. '
+          'Schreibe reinen Text ohne Sternchen oder andere Markdown-Formatierung, '
+          'ohne Überschrift, ohne Notiz oder Kommentar zu deiner Vorgehensweise '
+          'und ohne Absender-/Empfängerblock, Datum oder Betreffzeile: Name, '
+          'Stelle und Firma werden bereits separat angezeigt, wiederhole sie also '
+          'nicht und verwende keine Platzhalter in eckigen Klammern. Beginne '
+          'direkt mit einer Anrede, schreibe 2 bis 4 kurze Absätze, getrennt '
+          'durch eine Leerzeile, und schließe mit einer Grußformel gefolgt vom '
+          'Vornamen des Kandidaten in der nächsten Zeile.',
+      'Write only the body of a cover letter for this job, ready to be dropped '
+          'straight into a final document. Write plain prose with no asterisks or '
+          'other markdown formatting, no heading, no note or comment about your '
+          'approach, and no sender/recipient address block, date or subject line — '
+          'the name, job title and company are already shown separately, so do not '
+          'repeat them and do not use any bracketed placeholders. Start directly '
+          'with a salutation, write 2 to 4 short paragraphs separated by a blank '
+          'line, then end with a closing line followed by the applicant’s first '
+          'name on the next line.',
+    ],
     'downloadLetter': [
       'Télécharger',
       'Herunterladen',

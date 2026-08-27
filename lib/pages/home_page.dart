@@ -57,6 +57,19 @@ bool _isGuestProfileName(String value) {
       }.contains(normalized);
 }
 
+/// Strips markdown artifacts an AI reply may still include despite being
+/// asked for plain prose, so a letter never shows literal `**`/`*`/backticks.
+String sanitizeAiLetter(String text) {
+  return text
+      .replaceAllMapped(RegExp(r'\*\*([^*\n]+?)\*\*'), (m) => m.group(1)!)
+      .replaceAllMapped(RegExp(r'\*([^*\n]+?)\*'), (m) => m.group(1)!)
+      .replaceAllMapped(RegExp(r'`([^`\n]+?)`'), (m) => m.group(1)!)
+      .replaceAll(RegExp(r'^[ \t]*[-*_=]{3,}[ \t]*$', multiLine: true), '')
+      .replaceAll(RegExp(r'\*{2,}'), '')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .trim();
+}
+
 String _applicationLetter({
   required Job job,
   required UserProfileData profile,
@@ -1648,12 +1661,12 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         try {
           final (reply, _) = await _repository.askAi(
-            message: context.tr('assistantLetterPrompt'),
+            message: context.tr('letterAiInstruction'),
             profile: _profile,
             selectedJob: jobAiContext(job),
             bestMatches: const [],
           );
-          letter = reply;
+          letter = sanitizeAiLetter(reply);
           byAi = true;
         } on AiQuotaExceededException catch (error) {
           fallbackNote = error.message;
