@@ -187,7 +187,14 @@ class _JobCard extends StatelessWidget {
                       color: _muted,
                     ),
                     const SizedBox(width: 5),
-                    Text(job.commute, style: const TextStyle(fontSize: 11)),
+                    Flexible(
+                      child: Text(
+                        job.commute,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
                     const SizedBox(width: 12),
                     const Icon(
                       Icons.payments_outlined,
@@ -195,7 +202,14 @@ class _JobCard extends StatelessWidget {
                       color: _muted,
                     ),
                     const SizedBox(width: 5),
-                    Text(job.salary, style: const TextStyle(fontSize: 11)),
+                    Flexible(
+                      child: Text(
+                        job.salary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                    ),
                   ],
                 ),
                 const Spacer(),
