@@ -608,6 +608,7 @@ class WerklyRepository {
     if (currentUser == null) {
       throw AuthException(_tr('errorSignInUseAi'));
     }
+    final rawExperiences = profile.cvAnalysis['experiences'];
     final response = await _client.functions.invoke(
       'ai-assistant',
       body: {
@@ -620,6 +621,12 @@ class WerklyRepository {
           'summary': profile.professionalSummary,
           'skills': profile.skills,
           'preferences': profile.preferences,
+          // Real past roles from the CV scan (title/organization/period/
+          // highlights), so a generated letter can reference actual work
+          // history instead of writing generically.
+          'experiences': rawExperiences is List
+              ? rawExperiences.whereType<Map>().toList()
+              : const [],
         },
         'job': selectedJob,
         'jobs': bestMatches,
