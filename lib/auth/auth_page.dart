@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -87,6 +88,39 @@ class _AuthPageState extends State<AuthPage> {
           if (authErrorNeedsConfirmation(error.message)) {
             _confirmationPending = true;
           }
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _notice = context.tr('connectionFailed'));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _busy = true;
+      _notice = null;
+    });
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: werklyGoogleOAuthRedirect(),
+        authScreenLaunchMode: kIsWeb
+            ? LaunchMode.platformDefault
+            : LaunchMode.externalApplication,
+      );
+    } on AuthException catch (error) {
+      if (mounted) {
+        setState(() {
+          _notice = localizedAuthErrorMessage(
+            error.message,
+            AppLanguageController.language.value,
+          );
         });
       }
     } catch (_) {
@@ -409,6 +443,38 @@ class _AuthPageState extends State<AuthPage> {
                                             : context.tr('signIn'),
                                       ),
                               ),
+                              const SizedBox(height: 18),
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
+                                    child: Text(
+                                      context.tr('orDivider'),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                    ),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              OutlinedButton.icon(
+                                onPressed: _busy ? null : _signInWithGoogle,
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 15,
+                                  ),
+                                  side: const BorderSide(
+                                    color: Color(0xFFE4E8E1),
+                                  ),
+                                ),
+                                icon: const _GoogleMark(),
+                                label: Text(context.tr('continueWithGoogle')),
+                              ),
                               if (_confirmationPending) ...[
                                 const SizedBox(height: 8),
                                 TextButton.icon(
@@ -501,6 +567,33 @@ class _AuthBrand extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _GoogleMark extends StatelessWidget {
+  const _GoogleMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 20,
+      height: 20,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(5),
+        border: Border.all(color: const Color(0xFFE4E8E1)),
+      ),
+      child: const Text(
+        'G',
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w900,
+          color: Color(0xFF4285F4),
+          height: 1,
+        ),
+      ),
     );
   }
 }
