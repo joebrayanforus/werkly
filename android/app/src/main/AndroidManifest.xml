@@ -36,6 +36,9 @@
                 <data
                     android:scheme="de.werkly.app"
                     android:host="reset-callback" />
+                <data
+                    android:scheme="de.werkly.app"
+                    android:host="login-callback" />
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

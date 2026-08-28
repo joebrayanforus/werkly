@@ -1374,6 +1374,16 @@ class AppStrings {
       'Ohne Konto fortfahren',
       'Continue without an account',
     ],
+    'continueWithGoogle': [
+      'Continuer avec Google',
+      'Mit Google fortfahren',
+      'Continue with Google',
+    ],
+    'orDivider': [
+      'ou',
+      'oder',
+      'or',
+    ],
     'privacyRequired': [
       'Accepte la politique de confidentialité pour continuer.',
       'Akzeptiere die Datenschutzerklärung, um fortzufahren.',
