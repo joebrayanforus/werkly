@@ -14,7 +14,7 @@ const VAPID_PUBLIC_KEY = 'BN-D2VNVVkm7fiw9L6dSJrxAdaTh6kWLuAMKIPC_VGqhi2NSLrs_iB
 const MAX_NOTIFICATIONS_PER_USER = 3
 
 type PushSubscriptionRow = { user_id: string; endpoint: string; p256dh: string; auth: string }
-type ProfileRow = { id: string; city: string; skills: unknown }
+type ProfileRow = { id: string; city: string; skills: unknown; language: string | null }
 type JobRow = {
   id: number
   title: string
@@ -65,6 +65,23 @@ function profileSkillNames(rawSkills: unknown): string[] {
     }
     return []
   })
+}
+
+// Mirrors the copy pattern in auth-confirmed/index.ts. Falls back to English
+// for a profile predating the language column or an unrecognized value.
+const notificationCopy: Record<string, { title: (jobTitle: string) => string; body: (company: string, location: string) => string }> = {
+  fr: {
+    title: (jobTitle) => `Nouvelle offre : ${jobTitle}`,
+    body: (company, location) => `${company} · ${location}`,
+  },
+  de: {
+    title: (jobTitle) => `Neues Match: ${jobTitle}`,
+    body: (company, location) => `${company} · ${location}`,
+  },
+  en: {
+    title: (jobTitle) => `New match: ${jobTitle}`,
+    body: (company, location) => `${company} · ${location}`,
+  },
 }
 
 function jobMatchesProfile(job: JobRow, profile: ProfileRow): boolean {
@@ -153,7 +170,7 @@ Deno.serve(async (request) => {
   const userIds = [...new Set(subscriptionRows.map((row) => row.user_id))]
   const { data: profiles, error: profilesError } = await admin
     .from('profiles')
-    .select('id, city, skills')
+    .select('id, city, skills, language')
     .in('id', userIds)
   if (profilesError) {
     console.error('notify-job-matches profile read failed', profilesError)
@@ -186,10 +203,11 @@ Deno.serve(async (request) => {
       .slice(0, MAX_NOTIFICATIONS_PER_USER)
     if (matches.length === 0) continue
 
+    const copy = notificationCopy[profile.language ?? ''] ?? notificationCopy.en
     for (const job of matches) {
       const payload = JSON.stringify({
-        title: `New match: ${job.title}`,
-        body: `${job.company} · ${job.location}`,
+        title: copy.title(job.title),
+        body: copy.body(job.company, job.location),
         jobId: job.id,
       })
       let deliveredToAnySubscription = false

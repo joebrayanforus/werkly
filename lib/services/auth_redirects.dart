@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
 
+import '../l10n/app_language.dart';
+
 const werklyAuthConfirmedUrl =
     'https://bygqatraidykcxjfjala.supabase.co/functions/v1/auth-confirmed';
+
+String werklyAuthConfirmedUrlFor(AppLanguage language) =>
+    '$werklyAuthConfirmedUrl?lang=${language.code}';
 
 const werklyPasswordRecoveryDeepLink = 'de.werkly.app://reset-callback/';
 const werklyGoogleOAuthDeepLink = 'de.werkly.app://login-callback/';

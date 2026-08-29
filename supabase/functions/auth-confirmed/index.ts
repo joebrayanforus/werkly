@@ -53,8 +53,7 @@ function confirmationSvg(copy: ConfirmationCopy): string {
   const hint = escapeXml(copy.hint);
   const footer = escapeXml(copy.footer);
 
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1500" role="img" aria-labelledby="title description">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1500" width="100%" height="100%" role="img" aria-labelledby="title description">
   <title id="title">${title}</title>
   <desc id="description">${firstLine} ${secondLine}</desc>
   <defs>
@@ -92,6 +91,30 @@ function confirmationSvg(copy: ConfirmationCopy): string {
 </svg>`;
 }
 
+// Served as text/html (not image/svg+xml) so browsers render this inline
+// instead of downloading it as a file -- a bare SVG document at the top
+// level is treated as a download by some browsers/email-client webviews.
+// The CSP stays as tight as an SVG-only response: no script, no external
+// resources, just enough style to center the card responsively.
+function confirmationHtml(copy: ConfirmationCopy, language: string): string {
+  return `<!doctype html>
+<html lang="${language}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeXml(copy.title)}</title>
+<style>
+  html, body { margin: 0; background: #F7F7F2; }
+  body { display: flex; justify-content: center; padding: 24px 16px; box-sizing: border-box; }
+  svg { width: 100%; max-width: 480px; height: auto; }
+</style>
+</head>
+<body>
+${confirmationSvg(copy)}
+</body>
+</html>`;
+}
+
 Deno.serve((request: Request) => {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", {
@@ -110,14 +133,14 @@ Deno.serve((request: Request) => {
     : browserLanguage && copies[browserLanguage]
     ? browserLanguage
     : "en";
-  const body = confirmationSvg(copies[language]);
+  const body = confirmationHtml(copies[language], language);
 
   return new Response(request.method === "HEAD" ? null : body, {
     headers: {
-      "Content-Type": "image/svg+xml; charset=utf-8",
+      "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
       "Content-Security-Policy":
-        "default-src 'none'; style-src 'none'; script-src 'none'; frame-ancestors 'none'",
+        "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'",
       "Referrer-Policy": "no-referrer",
       "X-Content-Type-Options": "nosniff",
       "X-Frame-Options": "DENY",

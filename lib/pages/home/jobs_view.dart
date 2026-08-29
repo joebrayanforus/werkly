@@ -553,7 +553,10 @@ class _JobDetail extends StatelessWidget {
             const SizedBox(height: 12),
             Center(
               child: _Tag(
-                label: _localizedSourceTrust(context, jobSourceTrust(job.source)),
+                label: _localizedSourceTrust(
+                  context,
+                  jobSourceTrust(job.source),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -567,7 +570,7 @@ class _JobDetail extends StatelessWidget {
                       ),
                 icon: const Icon(Icons.open_in_new_rounded, size: 15),
                 label: Text(
-                  '${context.trFormat('originalJobOn', {'source': job.source})} · ${_localizedPosted(context, job)}',
+                  '${context.trFormat('originalJobOn', {'source': _localizedSourceLabel(context, job.source)})} · ${_localizedPosted(context, job)}',
                   style: const TextStyle(fontSize: 11),
                 ),
               ),
@@ -857,4 +860,3 @@ class _JobDetailSheet extends StatelessWidget {
     );
   }
 }
-

@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum AppLanguage { fr, de, en }
 
@@ -38,6 +41,23 @@ class AppLanguageController {
     if (language.value != value) language.value = value;
     final preferences = await SharedPreferences.getInstance();
     await preferences.setString(_storageKey, value.code);
+    // Best-effort: a user's chosen language is used server-side (push
+    // notification copy) but is never critical to the UI they're currently
+    // looking at, so a failure here (including Supabase not being
+    // initialized, e.g. in a widget test) shouldn't surface.
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId != null) {
+        unawaited(
+          Supabase.instance.client
+              .from('profiles')
+              .update({'language': value.code})
+              .eq('id', userId),
+        );
+      }
+    } catch (_) {
+      // Supabase not initialized, or the update failed -- not critical.
+    }
   }
 }
 
@@ -1379,11 +1399,7 @@ class AppStrings {
       'Mit Google fortfahren',
       'Continue with Google',
     ],
-    'orDivider': [
-      'ou',
-      'oder',
-      'or',
-    ],
+    'orDivider': ['ou', 'oder', 'or'],
     'privacyRequired': [
       'Accepte la politique de confidentialité pour continuer.',
       'Akzeptiere die Datenschutzerklärung, um fortzufahren.',
@@ -1541,11 +1557,7 @@ class AppStrings {
       'Nia schreibt dein Anschreiben…',
       'Nia is writing your letter…',
     ],
-    'letterByNia': [
-      'Rédigée par Nia',
-      'Von Nia geschrieben',
-      'Written by Nia',
-    ],
+    'letterByNia': ['Rédigée par Nia', 'Von Nia geschrieben', 'Written by Nia'],
     'letterQuickTemplate': [
       'Modèle rapide',
       'Schnellvorlage',
@@ -1597,10 +1609,28 @@ class AppStrings {
           'the real employer and real tasks instead of staying vague; if not, '
           'stay general and do not invent experience.',
     ],
-    'downloadLetter': [
-      'Télécharger',
-      'Herunterladen',
-      'Download',
+    'downloadLetter': ['Télécharger', 'Herunterladen', 'Download'],
+    'previewPdf': ['Prévisualiser le PDF', 'PDF-Vorschau', 'Preview PDF'],
+    'downloadPdf': ['Télécharger le PDF', 'PDF herunterladen', 'Download PDF'],
+    'pdfDownloadStarted': [
+      'Le téléchargement du PDF a démarré.',
+      'Der PDF-Download wurde gestartet.',
+      'The PDF download has started.',
+    ],
+    'pdfDownloadFailed': [
+      'Impossible de préparer le PDF. Réessaie dans un instant.',
+      'Das PDF konnte nicht vorbereitet werden. Versuche es gleich erneut.',
+      'The PDF could not be prepared. Try again in a moment.',
+    ],
+    'editLetterBeforeDownload': [
+      'Modifier la lettre avant le téléchargement',
+      'Anschreiben vor dem Download bearbeiten',
+      'Edit letter before downloading',
+    ],
+    'letterEditorHint': [
+      'Tu peux modifier ce texte avant de créer le PDF.',
+      'Du kannst diesen Text vor dem Erstellen des PDFs anpassen.',
+      'You can edit this text before creating the PDF.',
     ],
     'letterNeedsNameTitle': [
       'Ajoute ton nom avant de télécharger',
@@ -2432,6 +2462,12 @@ class AppStrings {
     ],
     'applicationFilePrefix': ['candidature', 'bewerbung', 'application'],
     'countryGermany': ['Allemagne', 'Deutschland', 'Germany'],
+    'sourcePartner': ['Partenaire', 'Partner', 'Partner'],
+    'verifiedEmployer': [
+      'Entreprise vérifiée',
+      'Verifizierter Arbeitgeber',
+      'Verified employer',
+    ],
     'save': ['Enregistrer', 'Speichern', 'Save'],
     'cancel': ['Annuler', 'Abbrechen', 'Cancel'],
     'close': ['Fermer', 'Schließen', 'Close'],
