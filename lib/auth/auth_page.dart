@@ -55,7 +55,9 @@ class _AuthPageState extends State<AuthPage> {
         final response = await auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
-          emailRedirectTo: werklyAuthConfirmedUrl,
+          emailRedirectTo: werklyAuthConfirmedUrlFor(
+            AppLanguageController.language.value,
+          ),
           data: {
             'full_name': _nameController.text.trim(),
             'preferred_language': AppLanguageController.language.value.name,
@@ -148,7 +150,9 @@ class _AuthPageState extends State<AuthPage> {
       await Supabase.instance.client.auth.resend(
         type: OtpType.signup,
         email: email,
-        emailRedirectTo: werklyAuthConfirmedUrl,
+        emailRedirectTo: werklyAuthConfirmedUrlFor(
+          AppLanguageController.language.value,
+        ),
       );
       if (mounted) {
         setState(() => _notice = context.tr('confirmationResent'));
@@ -453,9 +457,9 @@ class _AuthPageState extends State<AuthPage> {
                                     ),
                                     child: Text(
                                       context.tr('orDivider'),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
                                     ),
                                   ),
                                   const Expanded(child: Divider()),

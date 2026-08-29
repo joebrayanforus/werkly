@@ -249,6 +249,21 @@ class NotificationService {
     }
     final preferences = await SharedPreferences.getInstance();
     await preferences.setBool(_systemEnabledKey, granted);
+    if (granted) {
+      // A reminder created before the user enabled system notifications was
+      // only ever saved as in-app data -- scheduleReminder() checks this
+      // same flag and skips the OS-level alarm when it's off. Without this,
+      // enabling notifications later would silently leave those reminders
+      // unscheduled forever.
+      final now = DateTime.now();
+      for (final item in await load()) {
+        if (item.kind == 'reminder' &&
+            item.dueAt != null &&
+            item.dueAt!.isAfter(now)) {
+          await _scheduleSystem(item);
+        }
+      }
+    }
     return granted;
   }
 

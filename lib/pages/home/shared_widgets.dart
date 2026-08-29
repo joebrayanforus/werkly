@@ -270,7 +270,7 @@ class _CompanyLogo extends StatelessWidget {
         borderRadius: BorderRadius.circular(13),
       ),
       child: Text(
-        company.substring(0, 1),
+        company.trim().isEmpty ? '?' : company.trim().substring(0, 1),
         style: TextStyle(
           color: color,
           fontSize: small ? 16 : 19,
@@ -304,7 +304,6 @@ class _Tag extends StatelessWidget {
     );
   }
 }
-
 
 class _SheetHandle extends StatelessWidget {
   const _SheetHandle();

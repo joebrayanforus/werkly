@@ -22,6 +22,7 @@ import '../services/german_city_service.dart';
 import '../services/interview_prep_service.dart';
 import '../services/job_description_formatter.dart';
 import '../services/notification_service.dart';
+import '../services/pdf_download_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/saved_search_service.dart';
 
@@ -266,12 +267,6 @@ class Job {
 
 enum JobSortOption { match, newest, salary }
 
-String jobSortLabel(JobSortOption option) => switch (option) {
-  JobSortOption.match => 'Meilleure compatibilité',
-  JobSortOption.newest => 'Plus récentes',
-  JobSortOption.salary => 'Salaire le plus élevé',
-};
-
 String _localizedJobSortLabel(BuildContext context, JobSortOption option) =>
     context.tr(switch (option) {
       JobSortOption.match => 'sortMatch',
@@ -287,6 +282,13 @@ String _localizedFilterLabel(BuildContext context, String value) =>
       _ => 'forYou',
     });
 
+// 'Entreprise vérifiée' is a literal DB value assigned to every admin-approved
+// employer job submission (see the employer_job_submissions migration) — it's
+// a real label users see, not a proper noun, so it needs to follow the app's
+// language like every other source string.
+String _localizedSourceLabel(BuildContext context, String source) =>
+    source == 'Entreprise vérifiée' ? context.tr('verifiedEmployer') : source;
+
 String _localizedPreferenceValue(BuildContext context, String value) {
   final language = AppLanguageController.language.value;
   if (language == AppLanguage.fr) return value;
@@ -296,6 +298,7 @@ String _localizedPreferenceValue(BuildContext context, String value) {
     'Ingénierie': 'Ingenieurwesen',
     'Business & Finance': 'Wirtschaft & Finanzen',
     'Marketing & Design': 'Marketing & Design',
+    'Data & IA': 'Data & KI',
     'Hybride': 'Hybrid',
     'Télétravail': 'Remote',
     'Sur site': 'Vor Ort',
@@ -308,6 +311,7 @@ String _localizedPreferenceValue(BuildContext context, String value) {
     'Ingénierie': 'Engineering',
     'Business & Finance': 'Business & Finance',
     'Marketing & Design': 'Marketing & Design',
+    'Data & IA': 'Data & AI',
     'Hybride': 'Hybrid',
     'Télétravail': 'Remote',
     'Sur site': 'On site',
@@ -365,9 +369,7 @@ const jobsEmbeddedDetailMinimumViewportWidth = 1360.0;
 bool usesEmbeddedJobDetails({
   required int pageIndex,
   required double viewportWidth,
-}) =>
-    pageIndex == 1 &&
-    viewportWidth >= jobsEmbeddedDetailMinimumViewportWidth;
+}) => pageIndex == 1 && viewportWidth >= jobsEmbeddedDetailMinimumViewportWidth;
 
 int _storedSearchRadius(UserProfileData profile) {
   final value = (profile.preferences['search_radius'] as num?)?.round() ?? 25;
@@ -397,7 +399,12 @@ List<String> missingJobSkills(Job job, Iterable<String> profileSkills) => job
 /// `sync-free-jobs` already uses internally (direct employer feeds > the
 /// federal job board > aggregators) plus Werkly's own admin-verified
 /// employer submissions.
-enum SourceTrust { officialEmployer, officialBoard, verifiedSubmission, aggregator }
+enum SourceTrust {
+  officialEmployer,
+  officialBoard,
+  verifiedSubmission,
+  aggregator,
+}
 
 SourceTrust jobSourceTrust(String source) {
   if (source == 'Entreprise vérifiée') return SourceTrust.verifiedSubmission;
@@ -469,6 +476,12 @@ class _HomePageState extends State<HomePage> {
       _handleOpenedNotification,
     );
     _loadWorkspace();
+    if (_repository.currentUser != null) {
+      // Ensures profiles.language is populated from day one for accounts
+      // that never touch the language switcher (e.g. a Google sign-in that
+      // keeps the app's default), since it's used server-side for push copy.
+      AppLanguageController.setLanguage(AppLanguageController.language.value);
+    }
     if (kIsWeb) {
       _pushService.isSubscribed().then((subscribed) {
         if (mounted) setState(() => _pushSubscribed = subscribed);
@@ -834,7 +847,9 @@ class _HomePageState extends State<HomePage> {
       'unsupported' => context.tr('pushUnsupported'),
       _ => context.tr('pushSubscribeFailed'),
     };
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _editPreferences() async {
@@ -925,7 +940,7 @@ class _HomePageState extends State<HomePage> {
       row['description']?.toString() ?? '',
     );
     final location = formatExternalText(
-      row['location']?.toString() ?? 'Allemagne',
+      row['location']?.toString() ?? context.tr('countryGermany'),
     );
     final latitude = (row['latitude'] as num?)?.toDouble();
     final longitude = (row['longitude'] as num?)?.toDouble();
@@ -964,7 +979,9 @@ class _HomePageState extends State<HomePage> {
       salary: minimum == null
           ? context.tr('salaryUnknown')
           : '${minimum.toStringAsFixed(0)}–${(maximum ?? minimum).toStringAsFixed(0)} €/h',
-      source: formatExternalText(row['source']?.toString() ?? 'Partenaire'),
+      source: formatExternalText(
+        row['source']?.toString() ?? context.tr('sourcePartner'),
+      ),
       sourceUrl: row['source_url'] as String? ?? '',
       latitude: latitude ?? 48.1374,
       longitude: longitude ?? 11.5755,
@@ -1391,7 +1408,7 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       for (final source in sources)
                         FilterChip(
-                          label: Text(source),
+                          label: Text(_localizedSourceLabel(context, source)),
                           selected: selectedSources.contains(source),
                           onSelected: (selected) => setDialogState(() {
                             selected
@@ -1718,23 +1735,27 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (!mounted) return;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          context.trFormat('coverLetterFor', {'company': job.company}),
-        ),
-        content: SizedBox(
-          width: 620,
-          child: SingleChildScrollView(
+    final editor = TextEditingController(text: letter);
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(
+            dialogContext.trFormat('coverLetterFor', {'company': job.company}),
+          ),
+          content: SizedBox(
+            width: 680,
+            height: math.min(
+              MediaQuery.sizeOf(dialogContext).height * .52,
+              460,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   byAi
-                      ? context.tr('letterByNia')
-                      : fallbackNote ?? context.tr('letterQuickTemplate'),
+                      ? dialogContext.tr('letterByNia')
+                      : fallbackNote ?? dialogContext.tr('letterQuickTemplate'),
                   style: TextStyle(
                     color: byAi ? _green : _muted,
                     fontSize: 11,
@@ -1742,37 +1763,59 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                SelectableText(letter),
+                Expanded(
+                  child: TextField(
+                    controller: editor,
+                    keyboardType: TextInputType.multiline,
+                    textCapitalization: TextCapitalization.sentences,
+                    expands: true,
+                    maxLines: null,
+                    minLines: null,
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: InputDecoration(
+                      alignLabelWithHint: true,
+                      labelText: dialogContext.tr('editLetterBeforeDownload'),
+                      hintText: dialogContext.tr('letterEditorHint'),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text(dialogContext.tr('close')),
+            ),
+            OutlinedButton.icon(
+              onPressed: () {
+                final editedLetter = editor.text.trim();
+                if (editedLetter.isEmpty) return;
+                Navigator.pop(dialogContext);
+                _downloadLetter(job, editedLetter);
+              },
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: Text(dialogContext.tr('previewPdf')),
+            ),
+            FilledButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: editor.text));
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.tr('letterCopied'))),
+                  );
+                }
+              },
+              icon: const Icon(Icons.copy_rounded),
+              label: Text(dialogContext.tr('copy')),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('close')),
-          ),
-          OutlinedButton.icon(
-            onPressed: () => _downloadLetter(job, letter),
-            icon: const Icon(Icons.download_rounded),
-            label: Text(context.tr('downloadLetter')),
-          ),
-          FilledButton.icon(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: letter));
-              if (context.mounted) Navigator.pop(context);
-              if (mounted) {
-                ScaffoldMessenger.of(this.context).showSnackBar(
-                  SnackBar(content: Text(this.context.tr('letterCopied'))),
-                );
-              }
-            },
-            icon: const Icon(Icons.copy_rounded),
-            label: Text(context.tr('copy')),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      editor.dispose();
+    }
   }
 
   ApplicationKitData _applicationKitData(
@@ -1842,10 +1885,36 @@ class _HomePageState extends State<HomePage> {
   Future<void> _downloadLetter(Job job, String letter) async {
     if (!await _confirmPlaceholderNameDownload() || !mounted) return;
     final data = _applicationKitData(job, coverLetterOverride: letter);
-    final pdf = ApplicationKitService.buildLetterPdf(data);
     final safeCompany = _safeFileToken(job.company);
     final filename =
         '${context.tr('applicationFilePrefix')}_${context.tr('pdfCoverLetter').toLowerCase()}_${safeCompany.isEmpty ? 'werkstudent' : safeCompany}.pdf';
+
+    Future<Uint8List> buildVerifiedPdf() async {
+      final bytes = await ApplicationKitService.buildLetterPdf(data);
+      if (!isUsablePdf(bytes)) {
+        throw StateError('Generated a malformed PDF.');
+      }
+      return bytes;
+    }
+
+    Future<void> savePdf() async {
+      try {
+        final bytes = await buildVerifiedPdf();
+        await downloadPdf(bytes, filename);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('pdfDownloadStarted'))),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('pdfDownloadFailed'))),
+          );
+        }
+      }
+    }
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -1873,6 +1942,12 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: context.tr('downloadPdf'),
+                      onPressed: savePdf,
+                      icon: const Icon(Icons.download_rounded, color: _green),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
                       tooltip: context.tr('close'),
                       onPressed: () => Navigator.pop(dialogContext),
                       icon: const Icon(Icons.close_rounded),
@@ -1883,7 +1958,7 @@ class _HomePageState extends State<HomePage> {
               const Divider(height: 1),
               Expanded(
                 child: PdfPreview(
-                  build: (_) => pdf,
+                  build: (_) => buildVerifiedPdf(),
                   pdfFileName: filename,
                   canChangePageFormat: false,
                   canChangeOrientation: false,
@@ -1904,10 +1979,36 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _showApplicationKit(Job job) async {
     final data = _applicationKitData(job);
-    final pdf = ApplicationKitService.buildPdf(data);
     final safeCompany = _safeFileToken(job.company);
     final filename =
         '${context.tr('applicationFilePrefix')}_${safeCompany.isEmpty ? 'werkstudent' : safeCompany}.pdf';
+
+    Future<Uint8List> buildVerifiedPdf() async {
+      final bytes = await ApplicationKitService.buildPdf(data);
+      if (!isUsablePdf(bytes)) {
+        throw StateError('Generated a malformed PDF.');
+      }
+      return bytes;
+    }
+
+    Future<void> savePdf() async {
+      try {
+        final bytes = await buildVerifiedPdf();
+        await downloadPdf(bytes, filename);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('pdfDownloadStarted'))),
+          );
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.tr('pdfDownloadFailed'))),
+          );
+        }
+      }
+    }
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => Dialog(
@@ -1935,6 +2036,12 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     IconButton(
+                      tooltip: context.tr('downloadPdf'),
+                      onPressed: savePdf,
+                      icon: const Icon(Icons.download_rounded, color: _green),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
                       tooltip: context.tr('close'),
                       onPressed: () => Navigator.pop(dialogContext),
                       icon: const Icon(Icons.close_rounded),
@@ -1945,7 +2052,7 @@ class _HomePageState extends State<HomePage> {
               const Divider(height: 1),
               Expanded(
                 child: PdfPreview(
-                  build: (_) => pdf,
+                  build: (_) => buildVerifiedPdf(),
                   pdfFileName: filename,
                   canChangePageFormat: false,
                   canChangeOrientation: false,
@@ -2021,9 +2128,7 @@ class _HomePageState extends State<HomePage> {
                   TextField(
                     controller: phone,
                     keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      labelText: context.tr('phone'),
-                    ),
+                    decoration: InputDecoration(labelText: context.tr('phone')),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -2735,4 +2840,3 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-

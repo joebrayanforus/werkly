@@ -247,109 +247,114 @@ class _ApplicationColumn extends StatelessWidget {
             )
           else
             for (final job in jobs) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(13),
-                decoration: BoxDecoration(
-                  color: Colors.white,
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: () => onOpenJob(job),
+                  mouseCursor: SystemMouseCursors.click,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: _line),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(13),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: _line),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _CompanyLogo(
-                          company: job.company,
-                          color: job.color,
-                          small: true,
+                        Row(
+                          children: [
+                            _CompanyLogo(
+                              company: job.company,
+                              color: job.color,
+                              small: true,
+                            ),
+                            const Spacer(),
+                            PopupMenuButton<String>(
+                              tooltip: context.tr('changeStatus'),
+                              icon: const Icon(
+                                Icons.more_horiz_rounded,
+                                color: _muted,
+                                size: 18,
+                              ),
+                              onSelected: (status) => onStatusChanged(
+                                job.id,
+                                status == 'remove' ? null : status,
+                              ),
+                              itemBuilder: (context) => [
+                                PopupMenuItem(
+                                  value: 'preparing',
+                                  child: Text(context.tr('statusPreparing')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'applied',
+                                  child: Text(context.tr('statusApplied')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'interview',
+                                  child: Text(context.tr('statusInterview')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'offer',
+                                  child: Text(context.tr('statusOffer')),
+                                ),
+                                PopupMenuItem(
+                                  value: 'rejected',
+                                  child: Text(context.tr('statusRejected')),
+                                ),
+                                const PopupMenuDivider(),
+                                PopupMenuItem(
+                                  value: 'remove',
+                                  child: Text(context.tr('removeTracking')),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                        const Spacer(),
-                        PopupMenuButton<String>(
-                          tooltip: context.tr('changeStatus'),
-                          icon: const Icon(
-                            Icons.more_horiz_rounded,
-                            color: _muted,
-                            size: 18,
+                        const SizedBox(height: 10),
+                        Text(
+                          job.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
                           ),
-                          onSelected: (status) => onStatusChanged(
-                            job.id,
-                            status == 'remove' ? null : status,
-                          ),
-                          itemBuilder: (context) => [
-                            PopupMenuItem(
-                              value: 'preparing',
-                              child: Text(context.tr('statusPreparing')),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          job.company,
+                          style: const TextStyle(color: _muted, fontSize: 10),
+                        ),
+                        const SizedBox(height: 11),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.calendar_today_outlined,
+                              size: 12,
+                              color: _muted,
                             ),
-                            PopupMenuItem(
-                              value: 'applied',
-                              child: Text(context.tr('statusApplied')),
-                            ),
-                            PopupMenuItem(
-                              value: 'interview',
-                              child: Text(context.tr('statusInterview')),
-                            ),
-                            PopupMenuItem(
-                              value: 'offer',
-                              child: Text(context.tr('statusOffer')),
-                            ),
-                            PopupMenuItem(
-                              value: 'rejected',
-                              child: Text(context.tr('statusRejected')),
-                            ),
-                            const PopupMenuDivider(),
-                            PopupMenuItem(
-                              value: 'remove',
-                              child: Text(context.tr('removeTracking')),
+                            const SizedBox(width: 5),
+                            Text(
+                              title == context.tr('statusInterview')
+                                  ? context.tr('prepareQuestions')
+                                  : title == context.tr('statusOffer')
+                                  ? context.tr('replyCompany')
+                                  : title == context.tr('statusPreparing')
+                                  ? context.tr('completeApplication')
+                                  : context.tr('followUp'),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    InkWell(
-                      onTap: () => onOpenJob(job),
-                      child: Text(
-                        job.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      job.company,
-                      style: const TextStyle(color: _muted, fontSize: 10),
-                    ),
-                    const SizedBox(height: 11),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 12,
-                          color: _muted,
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          title == context.tr('statusInterview')
-                              ? context.tr('prepareQuestions')
-                              : title == context.tr('statusOffer')
-                              ? context.tr('replyCompany')
-                              : title == context.tr('statusPreparing')
-                              ? context.tr('completeApplication')
-                              : context.tr('followUp'),
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
               const SizedBox(height: 9),
@@ -359,4 +364,3 @@ class _ApplicationColumn extends StatelessWidget {
     );
   }
 }
-
