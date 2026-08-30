@@ -29,7 +29,11 @@ Verbindliche Regeln:
 - gib Telefonnummer und Adresse nur zurück, wenn sie wörtlich im Lebenslauf stehen, sonst einen leeren String;
 - schreibe die Zusammenfassung auf Deutsch, sachlich und für das Profil wiederverwendbar;
 - begründe jede erkannte Kompetenz kurz mit Inhalt aus dem Lebenslauf;
-- nenne fehlende oder mehrdeutige wichtige Angaben im Feld warnings.`,
+- nenne fehlende oder mehrdeutige wichtige Angaben im Feld warnings;
+- bewerte, ob der Lebenslauf für ATS-Systeme gut lesbar ist (atsScore 0-100, atsSummary ein Satz): einspaltiges Layout, Standardüberschriften, keine Tabellen oder Grafiken für wichtigen Text, Kontaktdaten im Fließtext statt in Kopf-/Fußzeile, echter auswählbarer Text statt eingescanntes Bild;
+- gib an, ob ein Bewerbungsfoto vorhanden ist (hasPhoto) und liste bis zu 5 konkrete Formatierungs- oder Fotohinweise nach deutschen Lebenslauf-Konventionen (z. B. Foto oben rechts, einseitiger tabellarischer Aufbau, Datum im Format TT.MM.JJJJ, Unterschrift mit Ort und Datum am Ende) in formatAdvice;
+- prüfe, welche der folgenden Abschnitte im Lebenslauf fehlen, und liste ihre Schlüssel in missingSections: photo, contact, summary, experience, education, skills, languages, signature;
+- gib für jede Sprache in languages zusätzlich confidence an: "stated" wenn das Niveau wörtlich genannt wird, "inferred" wenn es nur aus dem Kontext geschätzt werden kann, "unclear" wenn es unklar bleibt.`,
   },
   en: {
     addCv: 'Add a CV to your profile first.',
@@ -51,7 +55,11 @@ Mandatory rules:
 - only return a phone number or address if it is written verbatim in the CV, otherwise an empty string;
 - write the summary in English, factual and reusable in the profile;
 - support every detected skill with short evidence from the CV;
-- list important missing or ambiguous information in warnings.`,
+- list important missing or ambiguous information in warnings;
+- assess how well the CV would parse in an ATS (Applicant Tracking System) as atsScore (0-100) and one-sentence atsSummary: single-column layout, standard section headings, no tables or graphics used for essential text, contact info in the body rather than a header/footer, genuine selectable text rather than a scanned image;
+- report whether a professional photo is present (hasPhoto) and list up to 5 concrete formatting or photo suggestions following German CV (Lebenslauf) conventions (e.g. a photo in the top-right corner, a one-page tabular layout, DD.MM.YYYY dates, a signature with place and date at the end) in formatAdvice;
+- check which of the following sections are missing from the CV and list their keys in missingSections: photo, contact, summary, experience, education, skills, languages, signature;
+- for every entry in languages also report confidence: "stated" when the level is written verbatim, "inferred" when it can only be guessed from context, "unclear" when it remains uncertain.`,
   },
   fr: {
     addCv: 'Ajoute d’abord un CV à ton profil.',
@@ -73,7 +81,11 @@ Règles obligatoires :
 - ne renvoie un numéro de téléphone ou une adresse que s'ils figurent textuellement dans le CV, sinon une chaîne vide ;
 - le résumé doit être en français, factuel et réutilisable dans le profil ;
 - les preuves doivent être courtes et provenir du CV ;
-- signale dans warnings les informations importantes absentes ou ambiguës.`,
+- signale dans warnings les informations importantes absentes ou ambiguës ;
+- évalue la lisibilité du CV par un ATS (système de suivi des candidatures) via atsScore (0 à 100) et une phrase atsSummary : mise en page à une seule colonne, titres de section standards, aucun tableau ni graphique pour le texte essentiel, coordonnées dans le corps du texte plutôt que dans un en-tête ou pied de page, texte réellement sélectionnable plutôt qu'une image scannée ;
+- indique si une photo professionnelle est présente (hasPhoto) et liste jusqu'à 5 conseils concrets de mise en forme ou de photo selon les usages du CV allemand (Lebenslauf) (par exemple une photo en haut à droite, une mise en page tabulaire d'une page, des dates au format JJ.MM.AAAA, une signature avec lieu et date à la fin) dans formatAdvice ;
+- vérifie lesquelles des sections suivantes manquent dans le CV et indique leurs clés dans missingSections : photo, contact, summary, experience, education, skills, languages, signature ;
+- pour chaque entrée de languages, indique aussi confidence : "stated" si le niveau est écrit textuellement, "inferred" s'il ne peut être que déduit du contexte, "unclear" s'il reste incertain.`,
   },
 } as const
 
@@ -119,8 +131,13 @@ const analysisSchema = {
           language: { type: 'string' },
           level: { type: 'string', description: 'CEFR level when written, otherwise the requested language word for Unknown.' },
           evidence: { type: 'string' },
+          confidence: {
+            type: 'string',
+            enum: ['stated', 'inferred', 'unclear'],
+            description: 'Whether the CEFR level was written verbatim, only guessed from context, or remains unclear.',
+          },
         },
-        required: ['language', 'level', 'evidence'],
+        required: ['language', 'level', 'evidence', 'confidence'],
         additionalProperties: false,
       },
     },
@@ -156,6 +173,35 @@ const analysisSchema = {
     suggestedDegree: { type: 'string' },
     suggestedUniversity: { type: 'string' },
     warnings: { type: 'array', maxItems: 10, items: { type: 'string' } },
+    atsScore: {
+      type: 'integer',
+      minimum: 0,
+      maximum: 100,
+      description: 'How well this CV would parse in an Applicant Tracking System, 0-100.',
+    },
+    atsSummary: {
+      type: 'string',
+      description: 'One sentence in the requested language explaining the ATS score.',
+    },
+    hasPhoto: {
+      type: 'boolean',
+      description: 'Whether the CV includes a professional photo.',
+    },
+    formatAdvice: {
+      type: 'array',
+      maxItems: 5,
+      items: { type: 'string' },
+      description: 'Concrete formatting/photo suggestions following German CV (Lebenslauf) conventions.',
+    },
+    missingSections: {
+      type: 'array',
+      maxItems: 8,
+      items: {
+        type: 'string',
+        enum: ['photo', 'contact', 'summary', 'experience', 'education', 'skills', 'languages', 'signature'],
+      },
+      description: 'Canonical keys of sections that are missing from the CV.',
+    },
   },
   required: [
     'summary',
@@ -168,6 +214,11 @@ const analysisSchema = {
     'suggestedDegree',
     'suggestedUniversity',
     'warnings',
+    'atsScore',
+    'atsSummary',
+    'hasPhoto',
+    'formatAdvice',
+    'missingSections',
   ],
   additionalProperties: false,
 }
@@ -286,6 +337,18 @@ async function releaseCvQuota(eventId: string) {
   await admin.from('ai_usage_events').delete().eq('id', eventId)
 }
 
+const MISSING_SECTION_KEYS = [
+  'photo',
+  'contact',
+  'summary',
+  'experience',
+  'education',
+  'skills',
+  'languages',
+  'signature',
+] as const
+const LANGUAGE_CONFIDENCE_VALUES = ['stated', 'inferred', 'unclear'] as const
+
 function normalizeAnalysis(value: unknown, unknownLabel: string) {
   const raw = value && typeof value === 'object' ? value as Record<string, unknown> : {}
   const skills = cleanItems(raw.skills, 30).flatMap((item) => {
@@ -300,10 +363,14 @@ function normalizeAnalysis(value: unknown, unknownLabel: string) {
     const entry = item as Record<string, unknown>
     const language = clean(entry.language, 60)
     if (!language) return []
+    const confidence = clean(entry.confidence, 20)
     return [{
       language,
       level: clean(entry.level, 40) || unknownLabel,
       evidence: clean(entry.evidence, 240),
+      confidence: (LANGUAGE_CONFIDENCE_VALUES as readonly string[]).includes(confidence)
+        ? confidence
+        : 'unclear',
     }]
   })
   const experiences = cleanItems(raw.experiences, 15).flatMap((item) => {
@@ -342,6 +409,17 @@ function normalizeAnalysis(value: unknown, unknownLabel: string) {
     warnings: cleanItems(raw.warnings, 10)
       .map((warning) => clean(warning, 240))
       .filter(Boolean),
+    atsScore: Math.max(0, Math.min(100, Math.round(Number(raw.atsScore)) || 0)),
+    atsSummary: clean(raw.atsSummary, 240),
+    hasPhoto: raw.hasPhoto === true,
+    formatAdvice: cleanItems(raw.formatAdvice, 5)
+      .map((tip) => clean(tip, 200))
+      .filter(Boolean),
+    missingSections: cleanItems(raw.missingSections, 8)
+      .map((section) => clean(section, 20))
+      .filter((section): section is typeof MISSING_SECTION_KEYS[number] =>
+        (MISSING_SECTION_KEYS as readonly string[]).includes(section)
+      ),
   }
 }
 
@@ -448,12 +526,17 @@ Return ONLY one valid JSON object, without Markdown or commentary, with exactly 
   "phone": "",
   "address": "",
   "skills": [{"name": "", "level": "", "evidence": ""}],
-  "languages": [{"language": "", "level": "", "evidence": ""}],
+  "languages": [{"language": "", "level": "", "evidence": "", "confidence": "stated|inferred|unclear"}],
   "experiences": [{"title": "", "organization": "", "period": "", "highlights": [""]}],
   "education": [{"degree": "", "institution": "", "period": ""}],
   "suggestedDegree": "",
   "suggestedUniversity": "",
-  "warnings": [""]
+  "warnings": [""],
+  "atsScore": 0,
+  "atsSummary": "",
+  "hasPhoto": false,
+  "formatAdvice": [""],
+  "missingSections": ["photo|contact|summary|experience|education|skills|languages|signature"]
 }
 Use empty arrays when the CV contains no item for a list.`
 
