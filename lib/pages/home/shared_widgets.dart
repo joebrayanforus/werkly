@@ -629,6 +629,169 @@ class _LetterEditorDialogState extends State<_LetterEditorDialog> {
   }
 }
 
+// Same controller-lifecycle reasoning as _EditProfileDialog. Returns
+// (reason, details) on submit, or null on cancel/dismiss.
+class _ReportAiDialog extends StatefulWidget {
+  const _ReportAiDialog();
+
+  @override
+  State<_ReportAiDialog> createState() => _ReportAiDialogState();
+}
+
+class _ReportAiDialogState extends State<_ReportAiDialog> {
+  late final TextEditingController _details;
+  String _reason = 'inaccurate';
+
+  @override
+  void initState() {
+    super.initState();
+    _details = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _details.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.tr('reportAiTitle')),
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 460),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.tr('reportAiExplanation'),
+              style: const TextStyle(color: _muted, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: _reason,
+              decoration: InputDecoration(
+                labelText: context.tr('reportAiReason'),
+              ),
+              items:
+                  [
+                        ('inaccurate', context.tr('reportAiInaccurate')),
+                        ('offensive', context.tr('reportAiOffensive')),
+                        ('unsafe', context.tr('reportAiUnsafe')),
+                        ('other', context.tr('reportAiOther')),
+                      ]
+                      .map(
+                        (item) => DropdownMenuItem<String>(
+                          value: item.$1,
+                          child: Text(item.$2),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (value) {
+                if (value != null) setState(() => _reason = value);
+              },
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _details,
+              maxLength: 1000,
+              minLines: 3,
+              maxLines: 5,
+              decoration: InputDecoration(
+                labelText: context.tr('reportAiDetails'),
+                alignLabelWithHint: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.tr('cancel')),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.pop(context, (_reason, _details.text)),
+          icon: const Icon(Icons.flag_outlined, size: 18),
+          label: Text(context.tr('sendReport')),
+        ),
+      ],
+    );
+  }
+}
+
+// Same controller-lifecycle reasoning as _EditProfileDialog.
+class _AdminReviewDialog extends StatefulWidget {
+  const _AdminReviewDialog({required this.approved, required this.initialNote});
+  final bool approved;
+  final String initialNote;
+
+  @override
+  State<_AdminReviewDialog> createState() => _AdminReviewDialogState();
+}
+
+class _AdminReviewDialogState extends State<_AdminReviewDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialNote);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        widget.approved
+            ? context.tr('approveJobTitle')
+            : context.tr('rejectJobTitle'),
+      ),
+      content: TextField(
+        controller: _controller,
+        minLines: 3,
+        maxLines: 6,
+        autofocus: !widget.approved,
+        decoration: InputDecoration(
+          labelText: widget.approved
+              ? context.tr('internalNote')
+              : context.tr('rejectionReason'),
+          hintText: widget.approved
+              ? context.tr('checksCompleted')
+              : context.tr('correctionNeeded'),
+          alignLabelWithHint: true,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.tr('cancel')),
+        ),
+        FilledButton(
+          onPressed: () {
+            final value = _controller.text.trim();
+            if (!widget.approved && value.isEmpty) return;
+            Navigator.pop(context, value);
+          },
+          style: widget.approved
+              ? null
+              : FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+          child: Text(
+            widget.approved ? context.tr('approve') : context.tr('reject'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SheetHandle extends StatelessWidget {
   const _SheetHandle();
 

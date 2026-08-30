@@ -18,54 +18,13 @@ class _AdminModerationSheetState extends State<_AdminModerationSheet> {
       widget.repository.loadEmployerSubmissions();
 
   Future<void> _review(EmployerSubmissionData item, bool approved) async {
-    final controller = TextEditingController(
-      text: approved ? context.tr('adminApprovedDefaultNote') : '',
-    );
     final notes = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          approved
-              ? context.tr('approveJobTitle')
-              : context.tr('rejectJobTitle'),
-        ),
-        content: TextField(
-          controller: controller,
-          minLines: 3,
-          maxLines: 6,
-          autofocus: !approved,
-          decoration: InputDecoration(
-            labelText: approved
-                ? context.tr('internalNote')
-                : context.tr('rejectionReason'),
-            hintText: approved
-                ? context.tr('checksCompleted')
-                : context.tr('correctionNeeded'),
-            alignLabelWithHint: true,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel')),
-          ),
-          FilledButton(
-            onPressed: () {
-              final value = controller.text.trim();
-              if (!approved && value.isEmpty) return;
-              Navigator.pop(context, value);
-            },
-            style: approved
-                ? null
-                : FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
-            child: Text(
-              approved ? context.tr('approve') : context.tr('reject'),
-            ),
-          ),
-        ],
+      builder: (context) => _AdminReviewDialog(
+        approved: approved,
+        initialNote: approved ? context.tr('adminApprovedDefaultNote') : '',
       ),
     );
-    controller.dispose();
     if (notes == null || !mounted) return;
     setState(() => _reviewing.add(item.id));
     try {
@@ -308,4 +267,3 @@ class _AdminModerationSheetState extends State<_AdminModerationSheet> {
     );
   }
 }
-

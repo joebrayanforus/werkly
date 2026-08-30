@@ -112,89 +112,12 @@ class _AssistantSheetState extends State<_AssistantSheet> {
   }
 
   Future<void> _reportAiMessage(String content) async {
-    var reason = 'inaccurate';
-    final detailsController = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final result = await showDialog<(String, String)>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setDialogState) => AlertDialog(
-          title: Text(dialogContext.tr('reportAiTitle')),
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  dialogContext.tr('reportAiExplanation'),
-                  style: const TextStyle(color: _muted, fontSize: 12),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: reason,
-                  decoration: InputDecoration(
-                    labelText: dialogContext.tr('reportAiReason'),
-                  ),
-                  items:
-                      [
-                            (
-                              'inaccurate',
-                              dialogContext.tr('reportAiInaccurate'),
-                            ),
-                            (
-                              'offensive',
-                              dialogContext.tr('reportAiOffensive'),
-                            ),
-                            ('unsafe', dialogContext.tr('reportAiUnsafe')),
-                            ('other', dialogContext.tr('reportAiOther')),
-                          ]
-                          .map(
-                            (item) => DropdownMenuItem<String>(
-                              value: item.$1,
-                              child: Text(item.$2),
-                            ),
-                          )
-                          .toList(),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setDialogState(() => reason = value);
-                    }
-                  },
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: detailsController,
-                  maxLength: 1000,
-                  minLines: 3,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    labelText: dialogContext.tr('reportAiDetails'),
-                    alignLabelWithHint: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text(dialogContext.tr('cancel')),
-            ),
-            FilledButton.icon(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              icon: const Icon(Icons.flag_outlined, size: 18),
-              label: Text(dialogContext.tr('sendReport')),
-            ),
-          ],
-        ),
-      ),
+      builder: (context) => const _ReportAiDialog(),
     );
-    if (confirmed != true) {
-      detailsController.dispose();
-      return;
-    }
-    final details = detailsController.text;
-    detailsController.dispose();
+    if (result == null) return;
+    final (reason, details) = result;
     try {
       await _repository.reportAiContent(
         content: content,
@@ -618,4 +541,3 @@ class _QuickPrompt extends StatelessWidget {
     return OutlinedButton(onPressed: onTap, child: Text(label));
   }
 }
-
