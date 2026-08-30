@@ -412,13 +412,25 @@ int? _profileGermanLevel(UserProfileData profile) {
       return value.contains('deutsch') || value.contains('german');
     }),
   ];
+  final levels = candidates.map(_levelFromText).whereType<int>().toList();
+  // A CEFR level the CV analysis only inferred or found unclear is a
+  // weaker signal than one written verbatim in the CV, or one the student
+  // entered directly as a skill/preference -- discount it by one notch
+  // instead of trusting it exactly as much as a stated level.
   for (final item in _analysisItems(profile.cvAnalysis['languages'])) {
     final language = _normalize(item['language']?.toString() ?? '');
-    if (language.contains('deutsch') || language.contains('german')) {
-      candidates.add(item['level']?.toString() ?? '');
+    if (!language.contains('deutsch') && !language.contains('german')) {
+      continue;
     }
+    final level = _levelFromText(item['level']?.toString() ?? '');
+    if (level == null) continue;
+    final confidence = item['confidence']?.toString();
+    levels.add(
+      confidence == 'inferred' || confidence == 'unclear'
+          ? (level - 1).clamp(1, 6)
+          : level,
+    );
   }
-  final levels = candidates.map(_levelFromText).whereType<int>().toList();
   if (levels.isEmpty) return null;
   return levels.reduce((a, b) => a > b ? a : b);
 }

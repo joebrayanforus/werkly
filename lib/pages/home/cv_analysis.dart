@@ -25,6 +25,15 @@ class _CvAnalysisCard extends StatelessWidget {
         .whereType<String>()
         .where((value) => value.trim().isNotEmpty)
         .toList();
+    final atsScore = (analysis['atsScore'] as num?)?.toInt();
+    final atsSummary = (analysis['atsSummary'] as String?)?.trim() ?? '';
+    final formatAdvice = (analysis['formatAdvice'] as List? ?? const [])
+        .whereType<String>()
+        .where((value) => value.trim().isNotEmpty)
+        .toList();
+    final missingSections = (analysis['missingSections'] as List? ?? const [])
+        .whereType<String>()
+        .toSet();
     final complete = profile.cvAnalysisStatus == 'complete';
     final failed = profile.cvAnalysisStatus == 'failed';
     final analyzedAt = profile.cvAnalyzedAt;
@@ -155,12 +164,19 @@ class _CvAnalysisCard extends StatelessWidget {
                   _AnalysisGroup(
                     title: '${context.tr('languages')} (${languages.length})',
                     items: languages
-                        .map(
-                          (item) => [item['language'], item['level']]
+                        .map((item) {
+                          final label = [item['language'], item['level']]
                               .whereType<String>()
                               .where((v) => v.isNotEmpty)
-                              .join(' '),
-                        )
+                              .join(' ');
+                          final confidence = item['confidence'];
+                          final estimated =
+                              confidence == 'inferred' ||
+                              confidence == 'unclear';
+                          return estimated && label.isNotEmpty
+                              ? '$label (${context.tr('cvLevelEstimated')})'
+                              : label;
+                        })
                         .where((value) => value.isNotEmpty)
                         .toList(),
                   ),
@@ -175,6 +191,96 @@ class _CvAnalysisCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (atsScore != null) ...[
+                const SizedBox(height: 20),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ScoreBubble(score: atsScore, small: true),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            context.tr('cvAtsScore'),
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          if (atsSummary.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              atsSummary,
+                              style: const TextStyle(
+                                color: _muted,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (missingSections.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  context.tr('cvMissingSections'),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: missingSections
+                      .map(_cvSectionLabelKey)
+                      .whereType<String>()
+                      .map(
+                        (key) => Chip(
+                          visualDensity: VisualDensity.compact,
+                          avatar: const Icon(
+                            Icons.remove_circle_outline_rounded,
+                            size: 14,
+                          ),
+                          label: Text(
+                            context.tr(key),
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ],
+              if (formatAdvice.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  context.tr('cvFormatAdvice'),
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                ...formatAdvice.map(
+                  (tip) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.lightbulb_outline_rounded,
+                          size: 14,
+                          color: _muted,
+                        ),
+                        const SizedBox(width: 7),
+                        Expanded(
+                          child: Text(
+                            tip,
+                            style: const TextStyle(color: _muted, fontSize: 10),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               if (warnings.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Text(
@@ -208,6 +314,21 @@ class _CvAnalysisCard extends StatelessWidget {
           .map((item) => Map<String, dynamic>.from(item))
           .toList();
 }
+
+/// Maps a canonical missing-section key from the CV analysis (a fixed,
+/// server-validated enum) to its translation key, so labels always come
+/// from app_language.dart rather than trusting AI-generated text.
+String? _cvSectionLabelKey(String canonicalKey) => switch (canonicalKey) {
+  'photo' => 'cvSectionPhoto',
+  'contact' => 'cvSectionContact',
+  'summary' => 'cvSectionSummary',
+  'experience' => 'cvSectionExperience',
+  'education' => 'cvSectionEducation',
+  'skills' => 'cvSectionSkills',
+  'languages' => 'cvSectionLanguages',
+  'signature' => 'cvSectionSignature',
+  _ => null,
+};
 
 class _CvAnalysisProgress extends StatefulWidget {
   const _CvAnalysisProgress();
@@ -577,4 +698,3 @@ class _ChecklistItem extends StatelessWidget {
     );
   }
 }
-
