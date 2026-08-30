@@ -4,10 +4,14 @@
     <!-- Android 13+ asks the user at runtime before showing job alerts. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Predictive back races with Flutter's Navigator when a dialog/sheet has
+         a focused TextField and the IME is still animating closed, crashing
+         with a `_dependents.isEmpty` framework assertion. -->
     <application
         android:label="Werkly"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:enableOnBackInvokedCallback="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
