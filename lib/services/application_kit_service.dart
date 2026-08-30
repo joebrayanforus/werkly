@@ -169,11 +169,15 @@ class ApplicationKitService {
     String generatedDate,
   ) => pw.Column(
     crossAxisAlignment: pw.CrossAxisAlignment.start,
+    mainAxisSize: pw.MainAxisSize.min,
     children: [
       _header(strings.get('pdfCoverLetter'), generatedDate),
       pw.SizedBox(height: 28),
       _letterBody(strings, data),
-      pw.Spacer(),
+      // A fixed gap so the footer sits close beneath the letter, instead of
+      // a Spacer() stretching it to the physical bottom of the page -- a
+      // short letter left a large, unbalanced blank area otherwise.
+      pw.SizedBox(height: 48),
       _footer(strings.get('pdfFooter')),
     ],
   );
@@ -251,7 +255,11 @@ class ApplicationKitService {
         theme: theme,
         header: (_) =>
             _header(strings.get('pdfTailoredProfile'), generatedDate),
-        footer: (_) => _footer(strings.get('pdfFooter')),
+        // No footer: slot here -- MultiPage pins that to the physical
+        // bottom of every page regardless of content length, which is
+        // exactly the large-gap problem on page 1 this mirrors. Instead the
+        // footer is the last item in build() below, so it sits right after
+        // the real content.
         build: (context) => [
           pw.SizedBox(height: 24),
           pw.Text(
@@ -372,6 +380,8 @@ class ApplicationKitService {
               ),
             ),
           ],
+          pw.SizedBox(height: 32),
+          _footer(strings.get('pdfFooter')),
         ],
       ),
     );

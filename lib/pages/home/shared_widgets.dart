@@ -305,6 +305,330 @@ class _Tag extends StatelessWidget {
   }
 }
 
+// Owns its TextEditingControllers via normal StatefulWidget lifecycle
+// (created in initState, disposed in dispose) rather than the caller
+// creating them and disposing them right after showDialog's Future
+// resolves. That pattern races the dialog route's own exit transition --
+// pressing the hardware back button can pop the route and let the caller's
+// code run before the AlertDialog's last frame is actually torn down,
+// disposing a controller a still-live TextField then tries to read from.
+class _EditProfileDialog extends StatefulWidget {
+  const _EditProfileDialog({required this.profile});
+  final UserProfileData profile;
+
+  @override
+  State<_EditProfileDialog> createState() => _EditProfileDialogState();
+}
+
+class _EditProfileDialogState extends State<_EditProfileDialog> {
+  late final TextEditingController _name;
+  late final TextEditingController _university;
+  late final TextEditingController _degree;
+  late final TextEditingController _city;
+  late final TextEditingController _address;
+  late final TextEditingController _phone;
+  late final TextEditingController _summary;
+  late final TextEditingController _skills;
+  late bool _prefersRemote;
+
+  @override
+  void initState() {
+    super.initState();
+    _name = TextEditingController(text: widget.profile.fullName);
+    _university = TextEditingController(text: widget.profile.university);
+    _degree = TextEditingController(text: widget.profile.degree);
+    _city = TextEditingController(text: widget.profile.city);
+    _address = TextEditingController(text: widget.profile.address);
+    _phone = TextEditingController(text: widget.profile.phone);
+    _summary = TextEditingController(text: widget.profile.professionalSummary);
+    _skills = TextEditingController(text: widget.profile.skills.join(', '));
+    _prefersRemote = widget.profile.preferences['remote'] == true;
+  }
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _university.dispose();
+    _degree.dispose();
+    _city.dispose();
+    _address.dispose();
+    _phone.dispose();
+    _summary.dispose();
+    _skills.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final parsedSkills = _skills.text
+        .split(',')
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList();
+    var completion = 20;
+    if (_name.text.trim().isNotEmpty) completion += 10;
+    if (_university.text.trim().isNotEmpty) completion += 10;
+    if (_degree.text.trim().isNotEmpty) completion += 10;
+    if (_city.text.trim().isNotEmpty) completion += 5;
+    if (_address.text.trim().isNotEmpty) completion += 5;
+    if (_phone.text.trim().isNotEmpty) completion += 5;
+    if (_summary.text.trim().isNotEmpty) completion += 20;
+    if (parsedSkills.isNotEmpty) completion += 15;
+    if (widget.profile.cvPath != null) completion += 10;
+    Navigator.pop(
+      context,
+      widget.profile.copyWith(
+        fullName: _name.text,
+        university: _university.text,
+        degree: _degree.text,
+        city: _city.text,
+        phone: _phone.text,
+        address: _address.text,
+        professionalSummary: _summary.text,
+        skills: parsedSkills,
+        preferences: {...widget.profile.preferences, 'remote': _prefersRemote},
+        profileCompletion: completion.clamp(0, 100),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.tr('editProfile')),
+      content: SizedBox(
+        width: 540,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _name,
+                decoration: InputDecoration(labelText: context.tr('fullName')),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _university,
+                decoration: InputDecoration(
+                  labelText: context.tr('university'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _degree,
+                decoration: InputDecoration(labelText: context.tr('education')),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _city,
+                decoration: InputDecoration(labelText: context.tr('city')),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _address,
+                decoration: InputDecoration(labelText: context.tr('address')),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(labelText: context.tr('phone')),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _skills,
+                decoration: InputDecoration(
+                  labelText: context.tr('commaSkills'),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _summary,
+                maxLines: 4,
+                decoration: InputDecoration(
+                  labelText: context.tr('professionalSummary'),
+                ),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: Text(context.tr('preferFlexibleJobs')),
+                value: _prefersRemote,
+                onChanged: (value) => setState(() => _prefersRemote = value),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.tr('cancel')),
+        ),
+        FilledButton(onPressed: _save, child: Text(context.tr('save'))),
+      ],
+    );
+  }
+}
+
+// Same controller-lifecycle reasoning as _EditProfileDialog -- the
+// autofocus here made the underlying crash easier to hit than anywhere
+// else in the app, since the keyboard opens the instant this dialog shows.
+class _SaveSearchDialog extends StatefulWidget {
+  const _SaveSearchDialog({required this.defaultName});
+  final String defaultName;
+
+  @override
+  State<_SaveSearchDialog> createState() => _SaveSearchDialogState();
+}
+
+class _SaveSearchDialogState extends State<_SaveSearchDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.defaultName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(context.tr('saveThisSearch')),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 60,
+        decoration: InputDecoration(labelText: context.tr('searchName')),
+        onSubmitted: (value) => Navigator.pop(context, value.trim()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.tr('cancel')),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: Text(context.tr('save')),
+        ),
+      ],
+    );
+  }
+}
+
+// Same controller-lifecycle reasoning as _EditProfileDialog.
+class _LetterEditorDialog extends StatefulWidget {
+  const _LetterEditorDialog({
+    required this.company,
+    required this.letter,
+    required this.byAi,
+    required this.fallbackNote,
+    required this.onPreviewPdf,
+    required this.onCopied,
+  });
+
+  final String company;
+  final String letter;
+  final bool byAi;
+  final String? fallbackNote;
+  final ValueChanged<String> onPreviewPdf;
+  final VoidCallback onCopied;
+
+  @override
+  State<_LetterEditorDialog> createState() => _LetterEditorDialogState();
+}
+
+class _LetterEditorDialogState extends State<_LetterEditorDialog> {
+  late final TextEditingController _editor;
+
+  @override
+  void initState() {
+    super.initState();
+    _editor = TextEditingController(text: widget.letter);
+  }
+
+  @override
+  void dispose() {
+    _editor.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(
+        context.trFormat('coverLetterFor', {'company': widget.company}),
+      ),
+      content: SizedBox(
+        width: 680,
+        height: math.min(MediaQuery.sizeOf(context).height * .52, 460),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.byAi
+                  ? context.tr('letterByNia')
+                  : widget.fallbackNote ?? context.tr('letterQuickTemplate'),
+              style: TextStyle(
+                color: widget.byAi ? _green : _muted,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(
+              child: TextField(
+                controller: _editor,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
+                expands: true,
+                maxLines: null,
+                minLines: null,
+                textAlignVertical: TextAlignVertical.top,
+                decoration: InputDecoration(
+                  alignLabelWithHint: true,
+                  labelText: context.tr('editLetterBeforeDownload'),
+                  hintText: context.tr('letterEditorHint'),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(context.tr('close')),
+        ),
+        OutlinedButton.icon(
+          onPressed: () {
+            final editedLetter = _editor.text.trim();
+            if (editedLetter.isEmpty) return;
+            Navigator.pop(context);
+            widget.onPreviewPdf(editedLetter);
+          },
+          icon: const Icon(Icons.picture_as_pdf_outlined),
+          label: Text(context.tr('previewPdf')),
+        ),
+        FilledButton.icon(
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: _editor.text));
+            if (context.mounted) Navigator.pop(context);
+            widget.onCopied();
+          },
+          icon: const Icon(Icons.copy_rounded),
+          label: Text(context.tr('copy')),
+        ),
+      ],
+    );
+  }
+}
+
 class _SheetHandle extends StatelessWidget {
   const _SheetHandle();
 

@@ -1452,31 +1452,10 @@ class _HomePageState extends State<HomePage> {
     final defaultName = _query.trim().isNotEmpty
         ? '${_query.trim()} · ${_profile.city}'
         : 'Werkstudent · ${_profile.city}';
-    final controller = TextEditingController(text: defaultName);
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.tr('saveThisSearch')),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLength: 60,
-          decoration: InputDecoration(labelText: context.tr('searchName')),
-          onSubmitted: (value) => Navigator.pop(context, value.trim()),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(context.tr('cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(context.tr('save')),
-          ),
-        ],
-      ),
+      builder: (context) => _SaveSearchDialog(defaultName: defaultName),
     );
-    controller.dispose();
     if (name == null || name.isEmpty) return;
     final search = SavedJobSearch(
       id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -1735,87 +1714,23 @@ class _HomePageState extends State<HomePage> {
     }
 
     if (!mounted) return;
-    final editor = TextEditingController(text: letter);
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text(
-            dialogContext.trFormat('coverLetterFor', {'company': job.company}),
-          ),
-          content: SizedBox(
-            width: 680,
-            height: math.min(
-              MediaQuery.sizeOf(dialogContext).height * .52,
-              460,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  byAi
-                      ? dialogContext.tr('letterByNia')
-                      : fallbackNote ?? dialogContext.tr('letterQuickTemplate'),
-                  style: TextStyle(
-                    color: byAi ? _green : _muted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: TextField(
-                    controller: editor,
-                    keyboardType: TextInputType.multiline,
-                    textCapitalization: TextCapitalization.sentences,
-                    expands: true,
-                    maxLines: null,
-                    minLines: null,
-                    textAlignVertical: TextAlignVertical.top,
-                    decoration: InputDecoration(
-                      alignLabelWithHint: true,
-                      labelText: dialogContext.tr('editLetterBeforeDownload'),
-                      hintText: dialogContext.tr('letterEditorHint'),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: Text(dialogContext.tr('close')),
-            ),
-            OutlinedButton.icon(
-              onPressed: () {
-                final editedLetter = editor.text.trim();
-                if (editedLetter.isEmpty) return;
-                Navigator.pop(dialogContext);
-                _downloadLetter(job, editedLetter);
-              },
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: Text(dialogContext.tr('previewPdf')),
-            ),
-            FilledButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: editor.text));
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(context.tr('letterCopied'))),
-                  );
-                }
-              },
-              icon: const Icon(Icons.copy_rounded),
-              label: Text(dialogContext.tr('copy')),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      editor.dispose();
-    }
+    await showDialog<void>(
+      context: context,
+      builder: (context) => _LetterEditorDialog(
+        company: job.company,
+        letter: letter,
+        byAi: byAi,
+        fallbackNote: fallbackNote,
+        onPreviewPdf: (editedLetter) => _downloadLetter(job, editedLetter),
+        onCopied: () {
+          if (mounted) {
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(context.tr('letterCopied'))));
+          }
+        },
+      ),
+    );
   }
 
   ApplicationKitData _applicationKitData(
@@ -2072,146 +1987,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _editProfile() async {
-    final name = TextEditingController(text: _profile.fullName);
-    final university = TextEditingController(text: _profile.university);
-    final degree = TextEditingController(text: _profile.degree);
-    final city = TextEditingController(text: _profile.city);
-    final phone = TextEditingController(text: _profile.phone);
-    final address = TextEditingController(text: _profile.address);
-    final summary = TextEditingController(text: _profile.professionalSummary);
-    final skills = TextEditingController(text: _profile.skills.join(', '));
-    var prefersRemote = _profile.preferences['remote'] == true;
     final result = await showDialog<UserProfileData>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Text(context.tr('editProfile')),
-          content: SizedBox(
-            width: 540,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: name,
-                    decoration: InputDecoration(
-                      labelText: context.tr('fullName'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: university,
-                    decoration: InputDecoration(
-                      labelText: context.tr('university'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: degree,
-                    decoration: InputDecoration(
-                      labelText: context.tr('education'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: city,
-                    decoration: InputDecoration(labelText: context.tr('city')),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: address,
-                    decoration: InputDecoration(
-                      labelText: context.tr('address'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: phone,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(labelText: context.tr('phone')),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: skills,
-                    decoration: InputDecoration(
-                      labelText: context.tr('commaSkills'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: summary,
-                    maxLines: 4,
-                    decoration: InputDecoration(
-                      labelText: context.tr('professionalSummary'),
-                    ),
-                  ),
-                  SwitchListTile.adaptive(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(context.tr('preferFlexibleJobs')),
-                    value: prefersRemote,
-                    onChanged: (value) =>
-                        setDialogState(() => prefersRemote = value),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(context.tr('cancel')),
-            ),
-            FilledButton(
-              onPressed: () {
-                final parsedSkills = skills.text
-                    .split(',')
-                    .map((value) => value.trim())
-                    .where((value) => value.isNotEmpty)
-                    .toSet()
-                    .toList();
-                var completion = 20;
-                if (name.text.trim().isNotEmpty) completion += 10;
-                if (university.text.trim().isNotEmpty) completion += 10;
-                if (degree.text.trim().isNotEmpty) completion += 10;
-                if (city.text.trim().isNotEmpty) completion += 5;
-                if (address.text.trim().isNotEmpty) completion += 5;
-                if (phone.text.trim().isNotEmpty) completion += 5;
-                if (summary.text.trim().isNotEmpty) completion += 20;
-                if (parsedSkills.isNotEmpty) completion += 15;
-                if (_profile.cvPath != null) completion += 10;
-                Navigator.pop(
-                  context,
-                  _profile.copyWith(
-                    fullName: name.text,
-                    university: university.text,
-                    degree: degree.text,
-                    city: city.text,
-                    phone: phone.text,
-                    address: address.text,
-                    professionalSummary: summary.text,
-                    skills: parsedSkills,
-                    preferences: {
-                      ..._profile.preferences,
-                      'remote': prefersRemote,
-                    },
-                    profileCompletion: completion.clamp(0, 100),
-                  ),
-                );
-              },
-              child: Text(context.tr('save')),
-            ),
-          ],
-        ),
-      ),
+      builder: (context) => _EditProfileDialog(profile: _profile),
     );
-    name.dispose();
-    university.dispose();
-    degree.dispose();
-    city.dispose();
-    address.dispose();
-    phone.dispose();
-    summary.dispose();
-    skills.dispose();
     if (result == null) return;
     try {
       final saved = await _repository.saveProfile(result);
