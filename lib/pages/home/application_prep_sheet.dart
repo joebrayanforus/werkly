@@ -4,6 +4,7 @@ class _ApplicationPrepSheet extends StatefulWidget {
   const _ApplicationPrepSheet({
     required this.job,
     required this.profile,
+    required this.cvVersions,
     required this.initialStatus,
     required this.onGenerateLetter,
     required this.onExportKit,
@@ -15,9 +16,10 @@ class _ApplicationPrepSheet extends StatefulWidget {
 
   final Job job;
   final UserProfileData profile;
+  final List<CvVersionData> cvVersions;
   final String initialStatus;
   final Future<void> Function() onGenerateLetter;
-  final Future<void> Function() onExportKit;
+  final Future<void> Function(CvVersionData? cvVersion) onExportKit;
   final Future<bool> Function() onSetReminder;
   final Future<void> Function() onOpenOriginal;
   final Future<void> Function() onEditProfile;
@@ -29,6 +31,11 @@ class _ApplicationPrepSheet extends StatefulWidget {
 
 class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
   late String _status = widget.initialStatus;
+  late final CvVersionData? _autoSelected = bestCvVersionForJob(
+    widget.job,
+    widget.cvVersions,
+  );
+  late CvVersionData? _selected = _autoSelected;
   bool _letterPrepared = false;
   bool _kitPrepared = false;
   bool _keywordsCopied = false;
@@ -36,8 +43,12 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
   bool _reminderSet = false;
   bool _savingStatus = false;
 
+  List<String> get _activeSkills => (_selected?.skills.isNotEmpty ?? false)
+      ? _selected!.skills
+      : widget.profile.skills;
+
   bool get _profileReady =>
-      widget.profile.skills.isNotEmpty &&
+      _activeSkills.isNotEmpty &&
       widget.profile.professionalSummary.trim().isNotEmpty;
 
   bool get _sent => _status != 'preparing';
@@ -71,7 +82,7 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
   }
 
   Future<void> _exportKit() async {
-    await widget.onExportKit();
+    await widget.onExportKit(_selected);
     if (mounted) {
       setState(() {
         _kitPrepared = true;
@@ -108,8 +119,8 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final matched = matchedJobSkills(widget.job, widget.profile.skills);
-    final missing = missingJobSkills(widget.job, widget.profile.skills);
+    final matched = matchedJobSkills(widget.job, _activeSkills);
+    final missing = missingJobSkills(widget.job, _activeSkills);
     final progressPercent = (_progress * 100).round();
     final viewPadding = MediaQuery.viewPaddingOf(context);
     final statusLabels = <String, String>{
@@ -170,6 +181,16 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
                     ],
                   ),
                   const SizedBox(height: 22),
+                  if (widget.cvVersions.isNotEmpty) ...[
+                    _CvVersionSelector(
+                      versions: widget.cvVersions,
+                      selected: _selected,
+                      autoSelected: _autoSelected,
+                      onChanged: (version) =>
+                          setState(() => _selected = version),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   if (widget.job.compatibility.scored &&
                       widget.job.compatibility.cautions.isNotEmpty) ...[
                     _ApplicationCautionCard(
@@ -237,7 +258,7 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
                   const SizedBox(height: 16),
                   _PrepSkillBlock(
                     title: context.tr('strengthsForRole'),
-                    emptyText: widget.profile.skills.isEmpty
+                    emptyText: _activeSkills.isEmpty
                         ? context.tr('addSkillsAnalysis')
                         : context.tr('noExactMatch'),
                     skills: matched,
@@ -488,6 +509,87 @@ class _ApplicationCautionCard extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CvVersionSelector extends StatelessWidget {
+  const _CvVersionSelector({
+    required this.versions,
+    required this.selected,
+    required this.autoSelected,
+    required this.onChanged,
+  });
+
+  final List<CvVersionData> versions;
+  final CvVersionData? selected;
+  final CvVersionData? autoSelected;
+  final ValueChanged<CvVersionData?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAutoPick = selected != null && selected == autoSelected;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F6F2),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.badge_outlined, size: 18, color: _green),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  selected == null
+                      ? context.tr('usingBaseProfile')
+                      : context.trFormat('usingCvVersion', {
+                          'label': selected!.label,
+                        }),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12.5,
+                  ),
+                ),
+                if (isAutoPick)
+                  Text(
+                    context.tr('autoSelectedBadge'),
+                    style: const TextStyle(color: _muted, fontSize: 11),
+                  ),
+              ],
+            ),
+          ),
+          DropdownButton<String>(
+            value: selected?.id ?? '',
+            underline: const SizedBox.shrink(),
+            items: [
+              DropdownMenuItem(
+                value: '',
+                child: Text(
+                  context.tr('baseProfileOption'),
+                  style: const TextStyle(fontSize: 12.5),
+                ),
+              ),
+              for (final version in versions)
+                DropdownMenuItem(
+                  value: version.id,
+                  child: Text(
+                    version.label,
+                    style: const TextStyle(fontSize: 12.5),
+                  ),
+                ),
+            ],
+            onChanged: (id) => onChanged(
+              id == null || id.isEmpty
+                  ? null
+                  : versions.firstWhere((version) => version.id == id),
+            ),
+          ),
         ],
       ),
     );

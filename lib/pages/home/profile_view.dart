@@ -20,6 +20,8 @@ class _ProfileView extends StatelessWidget {
     required this.onOpenPrivacy,
     required this.isAdmin,
     required this.onOpenAdmin,
+    required this.cvVersions,
+    required this.onOpenCvVersions,
   });
 
   final UserProfileData profile;
@@ -40,6 +42,8 @@ class _ProfileView extends StatelessWidget {
   final VoidCallback onOpenPrivacy;
   final bool isAdmin;
   final VoidCallback onOpenAdmin;
+  final List<CvVersionData> cvVersions;
+  final VoidCallback onOpenCvVersions;
 
   @override
   Widget build(BuildContext context) {
@@ -109,6 +113,11 @@ class _ProfileView extends StatelessWidget {
                       onView: onViewCv,
                       onUpload: onUploadCv,
                     ),
+                    const SizedBox(height: 16),
+                    _CvVersionsCard(
+                      cvVersions: cvVersions,
+                      onManage: onOpenCvVersions,
+                    ),
                   ] else ...[
                     _ProfileSummary(
                       profile: profile,
@@ -126,6 +135,11 @@ class _ProfileView extends StatelessWidget {
                       onAnalyze: onAnalyzeCv,
                       onView: onViewCv,
                       onUpload: onUploadCv,
+                    ),
+                    const SizedBox(height: 16),
+                    _CvVersionsCard(
+                      cvVersions: cvVersions,
+                      onManage: onOpenCvVersions,
                     ),
                     const SizedBox(height: 16),
                     _CvChecklist(profile: profile, onOptimize: onOptimizeCv),
@@ -148,6 +162,65 @@ class _ProfileView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _CvVersionsCard extends StatelessWidget {
+  const _CvVersionsCard({required this.cvVersions, required this.onManage});
+
+  final List<CvVersionData> cvVersions;
+  final VoidCallback onManage;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: _mint,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.badge_outlined,
+                color: _green,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.tr('manageCvVersions'),
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    cvVersions.isEmpty
+                        ? context.tr('cvVersionsCardEmpty')
+                        : context.trFormat('cvVersionsCount', {
+                            'count': cvVersions.length,
+                          }),
+                    style: const TextStyle(color: _muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: onManage,
+              child: Text(context.tr('manageCvVersions')),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

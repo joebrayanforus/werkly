@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../auth/auth_page.dart';
 import '../data/werkly_repository.dart';
 import '../l10n/app_language.dart';
+import 'cv_versions_page.dart';
 import 'privacy_page.dart';
 import '../services/application_kit_service.dart';
 import '../services/commute_service.dart';
@@ -395,6 +396,51 @@ List<String> missingJobSkills(Job job, Iterable<String> profileSkills) => job
     .toSet()
     .toList();
 
+/// Picks whichever saved CV version best fits a job, so the application kit
+/// can be tailored automatically instead of always using the base profile.
+/// Category keywords (the same ones used for job-preference scoring, see
+/// [domainKeywords]) dominate the score -- a "Data" version should win a
+/// data-science posting even with modest skill-tag overlap -- and skill
+/// overlap only breaks ties or covers jobs whose text hits no keyword.
+/// Returns null (meaning: fall back to the base profile) when there are no
+/// versions or nothing scores above zero, never a low-confidence guess.
+CvVersionData? bestCvVersionForJob(Job job, List<CvVersionData> versions) {
+  final normalizedJob = normalizeText(
+    '${job.title} ${job.description} ${job.tags.join(' ')}',
+  );
+  final realTags = job.tags.where((tag) => !isGenericJobTag(tag)).toSet();
+
+  int scoreFor(CvVersionData version) {
+    final categoryHit = (domainKeywords[version.category] ?? const [])
+        .any(normalizedJob.contains);
+    final skillOverlap = realTags
+        .where(
+          (tag) => version.skills.any((skill) => _skillMatches(skill, tag)),
+        )
+        .length;
+    return (categoryHit ? 1000 : 0) + skillOverlap;
+  }
+
+  CvVersionData? best;
+  var bestScore = 0;
+  for (final version in versions) {
+    final score = scoreFor(version);
+    if (score == 0) continue;
+    final isBetter =
+        score > bestScore ||
+        (score == bestScore &&
+            best != null &&
+            (version.updatedAt ?? DateTime(0)).isAfter(
+              best.updatedAt ?? DateTime(0),
+            ));
+    if (isBetter) {
+      best = version;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
 /// How trustworthy a job listing's source is, mirroring the priority order
 /// `sync-free-jobs` already uses internally (direct employer feeds > the
 /// federal job board > aggregators) plus Werkly's own admin-verified
@@ -449,6 +495,7 @@ class _HomePageState extends State<HomePage> {
   final Set<int> _appliedJobs = <int>{};
   final Map<int, String> _applicationStatuses = <int, String>{};
   UserProfileData _profile = UserProfileData.guest();
+  List<CvVersionData> _cvVersions = const [];
   double _minimumSalary = 0;
   bool _flexibleOnly = false;
   Set<String> _selectedSources = <String>{};
@@ -539,6 +586,7 @@ class _HomePageState extends State<HomePage> {
     try {
       final state = await _repository.loadWorkspace(forceSync: forceSync);
       final savedSearches = await _savedSearchService.loadAll();
+      final cvVersions = await _repository.listCvVersions();
       if (!mounted) return;
       final jobCatalog = await _buildJobCatalog(state.jobs);
       if (!mounted) return;
@@ -548,6 +596,7 @@ class _HomePageState extends State<HomePage> {
         _jobRows = state.jobs;
         _jobCatalog = jobCatalog;
         _savedSearches = savedSearches;
+        _cvVersions = cvVersions;
         if (_jobCatalog.isNotEmpty) {
           if (!_jobCatalog.any((job) => job.id == _selectedJobId)) {
             _selectedJobId = _jobCatalog.first.id;
@@ -1747,9 +1796,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Falls back to the base profile's value whenever the CV version's own
+  // field is blank, so a version that only customizes e.g. skills doesn't
+  // blank out the rest of the kit.
+  String _versionFieldOr(String? versionValue, String profileValue) =>
+      (versionValue ?? '').trim().isEmpty ? profileValue : versionValue!;
+
   ApplicationKitData _applicationKitData(
     Job job, {
     String? coverLetterOverride,
+    CvVersionData? cvVersion,
   }) => ApplicationKitData(
     applicantName: _isGuestProfileName(_profile.fullName)
         ? context.tr('guestApplicantName')
@@ -1757,11 +1813,16 @@ class _HomePageState extends State<HomePage> {
     email: Supabase.instance.client.auth.currentUser?.email ?? '',
     phone: _profile.phone,
     address: _profile.address,
-    degree: _profile.degree,
-    university: _profile.university,
-    city: _profile.city,
-    summary: _profile.professionalSummary,
-    profileSkills: _profile.skills,
+    degree: _versionFieldOr(cvVersion?.degree, _profile.degree),
+    university: _versionFieldOr(cvVersion?.university, _profile.university),
+    city: _versionFieldOr(cvVersion?.city, _profile.city),
+    summary: _versionFieldOr(
+      cvVersion?.professionalSummary,
+      _profile.professionalSummary,
+    ),
+    profileSkills: (cvVersion?.skills.isNotEmpty ?? false)
+        ? cvVersion!.skills
+        : _profile.skills,
     jobTitle: job.title,
     company: job.company,
     jobLocation: job.location,
@@ -1906,8 +1967,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> _showApplicationKit(Job job) async {
-    final data = _applicationKitData(job);
+  Future<void> _showApplicationKit(Job job, {CvVersionData? cvVersion}) async {
+    final data = _applicationKitData(job, cvVersion: cvVersion);
     final safeCompany = _safeFileToken(job.company);
     final filename =
         '${context.tr('applicationFilePrefix')}_${safeCompany.isEmpty ? 'werkstudent' : safeCompany}.pdf';
@@ -2188,9 +2249,11 @@ class _HomePageState extends State<HomePage> {
       builder: (_) => _ApplicationPrepSheet(
         job: job,
         profile: _profile,
+        cvVersions: _cvVersions,
         initialStatus: initialStatus,
         onGenerateLetter: () => _showLetter(job),
-        onExportKit: () => _showApplicationKit(job),
+        onExportKit: (cvVersion) =>
+            _showApplicationKit(job, cvVersion: cvVersion),
         onSetReminder: () => _setApplicationReminder(job),
         onOpenOriginal: () => _openOriginalJob(job),
         onEditProfile: _editProfile,
@@ -2369,6 +2432,19 @@ class _HomePageState extends State<HomePage> {
       await _repository.setCvAnalysisPrivacyChoice(accepted);
     }
     return accepted == true;
+  }
+
+  Future<void> _openCvVersions() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const CvVersionsPage()));
+    if (!mounted) return;
+    try {
+      final versions = await _repository.listCvVersions();
+      if (mounted) setState(() => _cvVersions = versions);
+    } catch (_) {
+      // Best-effort refresh -- the page itself already reported any errors.
+    }
   }
 
   Future<void> _analyzeCv({bool forceConsentPrompt = false}) async {
@@ -2602,6 +2678,8 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                   isAdmin: _repository.isAdmin,
                                   onOpenAdmin: _showAdminModeration,
+                                  cvVersions: _cvVersions,
+                                  onOpenCvVersions: _openCvVersions,
                                 ),
                               },
                             ),

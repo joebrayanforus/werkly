@@ -324,17 +324,17 @@ List<String> _profileSkills(UserProfileData profile) {
 /// Whether [tag] is boilerplate ("Werkstudent", "IT", "Sales"...) rather than
 /// an actual skill -- useful whenever a caller falls back to a job's raw tags
 /// instead of a real skill match, so it doesn't present noise as a skill.
-bool isGenericJobTag(String tag) => _genericJobTags.contains(_normalize(tag));
+bool isGenericJobTag(String tag) => _genericJobTags.contains(normalizeText(tag));
 
 List<String> _jobSkills(List<String> tags, String jobText) {
   final result = <String>{};
   for (final tag in tags) {
     final value = tag.trim();
-    if (value.isNotEmpty && !_genericJobTags.contains(_normalize(value))) {
+    if (value.isNotEmpty && !_genericJobTags.contains(normalizeText(value))) {
       result.add(value);
     }
   }
-  final normalized = _normalize(jobText);
+  final normalized = normalizeText(jobText);
   for (final entry in _skillAliases.entries) {
     if (entry.value.any((alias) => normalized.contains(alias))) {
       result.add(entry.key);
@@ -354,7 +354,7 @@ int _weightedAverage(List<({int score, double weight})> values) {
 }
 
 String _normalizedRemoteType(String? value, bool remote) {
-  final normalized = _normalize(value ?? '');
+  final normalized = normalizeText(value ?? '');
   if (normalized.contains('hybrid')) return 'hybrid';
   if (normalized.contains('remote')) return 'remote';
   if (normalized.contains('onsite') || normalized.contains('on-site')) {
@@ -364,7 +364,7 @@ String _normalizedRemoteType(String? value, bool remote) {
 }
 
 int _workModeFit(String preferredMode, String remoteType) {
-  final preferred = _normalize(preferredMode);
+  final preferred = normalizeText(preferredMode);
   if (preferred.contains('teletravail')) {
     return remoteType == 'remote'
         ? 100
@@ -386,7 +386,7 @@ int _workModeFit(String preferredMode, String remoteType) {
 }
 
 int? _requiredGermanLevel(String jobText) {
-  final text = _normalize(jobText);
+  final text = normalizeText(jobText);
   if (!RegExp(r'\b(deutsch|german)\w*\b').hasMatch(text)) return null;
   final explicit = RegExp(
     r'(?:deutsch\w*|german)\s*(?:auf\s*)?(a1|a2|b1|b2|c1|c2)|\b(a1|a2|b1|b2|c1|c2)\b\s*(?:deutsch\w*|german)',
@@ -408,7 +408,7 @@ int? _profileGermanLevel(UserProfileData profile) {
     if (profile.preferences['german_level'] is String)
       profile.preferences['german_level'] as String,
     ...profile.skills.where((skill) {
-      final value = _normalize(skill);
+      final value = normalizeText(skill);
       return value.contains('deutsch') || value.contains('german');
     }),
   ];
@@ -418,7 +418,7 @@ int? _profileGermanLevel(UserProfileData profile) {
   // entered directly as a skill/preference -- discount it by one notch
   // instead of trusting it exactly as much as a stated level.
   for (final item in _analysisItems(profile.cvAnalysis['languages'])) {
-    final language = _normalize(item['language']?.toString() ?? '');
+    final language = normalizeText(item['language']?.toString() ?? '');
     if (!language.contains('deutsch') && !language.contains('german')) {
       continue;
     }
@@ -447,7 +447,7 @@ int _levelFit(int? profileLevel, int requiredLevel) {
 int? _levelFromText(String value) {
   final match = RegExp(
     r'\b(a1|a2|b1|b2|c1|c2)\b',
-  ).firstMatch(_normalize(value));
+  ).firstMatch(normalizeText(value));
   return match == null ? null : _levelValue(match.group(1)!);
 }
 
@@ -472,7 +472,7 @@ String _levelName(int? level, String unknown) => switch (level) {
 };
 
 String? _educationRequirement(String jobText) {
-  final text = _normalize(jobText);
+  final text = normalizeText(jobText);
   if (RegExp(r'\bmaster\b').hasMatch(text)) return 'master';
   if (RegExp(r'\bbachelor\b').hasMatch(text)) return 'bachelor';
   if (text.contains('immatrikul') ||
@@ -491,7 +491,7 @@ int _educationFit(
   bool hasEducation,
 ) {
   if (!hasEducation) return 0;
-  final text = _normalize(
+  final text = normalizeText(
     [
       profile.degree,
       ..._analysisItems(profile.cvAnalysis['education'])
@@ -513,7 +513,7 @@ int _educationFit(
 }
 
 int? _experienceRequirement(String jobText) {
-  final text = _normalize(jobText);
+  final text = normalizeText(jobText);
   final years = RegExp(
     r'(\d{1,2})\+?\s*(?:jahre|years|ans)\s+(?:berufs)?erfahrung',
   ).firstMatch(text);
@@ -530,7 +530,7 @@ int _estimatedExperienceMonths(UserProfileData profile, DateTime now) {
   var total = 0;
   final experiences = _analysisItems(profile.cvAnalysis['experiences']);
   for (final item in experiences) {
-    final period = _normalize(item['period']?.toString() ?? '');
+    final period = normalizeText(item['period']?.toString() ?? '');
     final years = RegExp(r'(20\d{2}).*?(20\d{2})').firstMatch(period);
     if (years != null) {
       final start = int.tryParse(years.group(1) ?? '');
@@ -554,7 +554,7 @@ int _estimatedExperienceMonths(UserProfileData profile, DateTime now) {
     total += 6;
   }
   if (total == 0 &&
-      _normalize(profile.professionalSummary).contains('experience')) {
+      normalizeText(profile.professionalSummary).contains('experience')) {
     return 3;
   }
   return total;
@@ -566,51 +566,53 @@ int _experienceFit(int requiredMonths, int profileMonths) {
   return ((profileMonths / requiredMonths) * 100).round().clamp(0, 100);
 }
 
+/// Keywords that identify which professional field a job posting belongs to,
+/// keyed by the same canonical field names used throughout the app (job
+/// search preferences, CV versions). Shared so every place that needs "does
+/// this job text belong to field X" uses one definition instead of drifting
+/// copies.
+const domainKeywords = <String, List<String>>{
+  'Informatique': [
+    'informatik',
+    'software',
+    'developer',
+    'entwicklung',
+    'flutter',
+    'java',
+  ],
+  'Data & IA': [
+    'data',
+    'analytics',
+    'machine learning',
+    'kunstliche intelligenz',
+    'python',
+    'sql',
+  ],
+  'Ingénierie': ['ingenieur', 'engineering', 'technik', 'elektro', 'maschinenbau'],
+  'Business & Finance': [
+    'business',
+    'finance',
+    'controlling',
+    'consulting',
+    'wirtschaft',
+  ],
+  'Marketing & Design': [
+    'marketing',
+    'design',
+    'content',
+    'communication',
+    'ux',
+  ],
+};
+
 int? _fieldPreferenceScore(Object? rawFields, String jobText) {
   if (rawFields is! List || rawFields.isEmpty) return null;
   if (rawFields.whereType<String>().contains('Tous domaines')) return null;
-  final normalizedJob = _normalize(jobText);
-  const keywords = <String, List<String>>{
-    'Informatique': [
-      'informatik',
-      'software',
-      'developer',
-      'entwicklung',
-      'flutter',
-      'java',
-    ],
-    'Data & IA': [
-      'data',
-      'analytics',
-      'machine learning',
-      'kunstliche intelligenz',
-      'python',
-      'sql',
-    ],
-    'Ingénierie': [
-      'ingenieur',
-      'engineering',
-      'technik',
-      'elektro',
-      'maschinenbau',
-    ],
-    'Business & Finance': [
-      'business',
-      'finance',
-      'controlling',
-      'consulting',
-      'wirtschaft',
-    ],
-    'Marketing & Design': [
-      'marketing',
-      'design',
-      'content',
-      'communication',
-      'ux',
-    ],
-  };
+  final normalizedJob = normalizeText(jobText);
   for (final field in rawFields.whereType<String>()) {
-    if ((keywords[field] ?? const []).any(normalizedJob.contains)) return 100;
+    if ((domainKeywords[field] ?? const []).any(normalizedJob.contains)) {
+      return 100;
+    }
   }
   return 15;
 }
@@ -619,7 +621,7 @@ int _weeklyHoursFit(Object? rawPreference, String jobText) {
   if (rawPreference is! String || rawPreference.isEmpty) return 70;
   final match = RegExp(
     r'(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s*(?:h|stunden)',
-  ).firstMatch(_normalize(jobText));
+  ).firstMatch(normalizeText(jobText));
   if (match == null) return 70;
   final jobMin = int.tryParse(match.group(1) ?? '') ?? 0;
   final jobMax = int.tryParse(match.group(2) ?? '') ?? jobMin;
@@ -643,15 +645,15 @@ bool _skillMatches(String profileSkill, String jobSkill) {
 }
 
 String _canonicalSkill(String value) {
-  final normalized = _normalize(value);
+  final normalized = normalizeText(value);
   for (final entry in _skillAliases.entries) {
     if (entry.value.any((alias) => normalized == alias)) {
-      return _normalize(entry.key);
+      return normalizeText(entry.key);
     }
   }
   for (final entry in _skillAliases.entries) {
     if (entry.value.any((alias) => normalized.contains(alias))) {
-      return _normalize(entry.key);
+      return normalizeText(entry.key);
     }
   }
   return normalized;
@@ -687,7 +689,7 @@ int _careerFitScore({
 }
 
 Set<String> _careerDomains(String input) {
-  final text = _normalize(input);
+  final text = normalizeText(input);
   final result = <String>{};
 
   bool containsAny(Iterable<String> terms) => terms.any(text.contains);
@@ -809,7 +811,7 @@ List<Map<String, dynamic>> _analysisItems(Object? value) =>
         .map((item) => Map<String, dynamic>.from(item))
         .toList();
 
-Set<String> _tokens(String input) => _normalize(input)
+Set<String> _tokens(String input) => normalizeText(input)
     .split(RegExp(r'[^a-z0-9+#]+'))
     .where((token) => token.length >= 3 && !_stopWords.contains(token))
     .map(_canonicalToken)
@@ -827,7 +829,7 @@ String _canonicalToken(String token) => switch (token) {
   _ => token,
 };
 
-String _normalize(String input) => input
+String normalizeText(String input) => input
     .trim()
     .toLowerCase()
     .replaceAll('ä', 'a')
