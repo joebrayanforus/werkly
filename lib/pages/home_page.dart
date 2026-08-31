@@ -540,11 +540,13 @@ class _HomePageState extends State<HomePage> {
       final state = await _repository.loadWorkspace(forceSync: forceSync);
       final savedSearches = await _savedSearchService.loadAll();
       if (!mounted) return;
+      final jobCatalog = await _buildJobCatalog(state.jobs);
+      if (!mounted) return;
       setState(() {
         _profile = state.profile;
         _distance = _storedSearchRadius(state.profile);
         _jobRows = state.jobs;
-        _jobCatalog = _jobRows.map(_jobFromRow).toList();
+        _jobCatalog = jobCatalog;
         _savedSearches = savedSearches;
         if (_jobCatalog.isNotEmpty) {
           if (!_jobCatalog.any((job) => job.id == _selectedJobId)) {
@@ -917,6 +919,18 @@ class _HomePageState extends State<HomePage> {
     (job) => job.id == _selectedJobId,
     orElse: () => _jobCatalog.first,
   );
+
+  Future<List<Job>> _buildJobCatalog(List<Map<String, dynamic>> rows) async {
+    final catalog = <Job>[];
+    for (var i = 0; i < rows.length; i++) {
+      catalog.add(_jobFromRow(rows[i]));
+      if (i % 50 == 49) {
+        await Future<void>.delayed(Duration.zero);
+        if (!mounted) return catalog;
+      }
+    }
+    return catalog;
+  }
 
   Job _jobFromRow(Map<String, dynamic> row) {
     const colors = [
