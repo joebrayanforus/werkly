@@ -186,6 +186,106 @@ class UserProfileData {
   };
 }
 
+/// A named, category-tagged variant of the flat CV fields (degree,
+/// university, city, summary, skills) that feed the application PDF kit --
+/// e.g. a "Software" version and a separate "Business" version, so the right
+/// one can be picked automatically per job instead of the base profile
+/// always being used.
+class CvVersionData {
+  const CvVersionData({
+    required this.id,
+    required this.label,
+    required this.category,
+    required this.university,
+    required this.degree,
+    required this.city,
+    required this.professionalSummary,
+    required this.skills,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  factory CvVersionData.draft() => const CvVersionData(
+    id: '',
+    label: '',
+    category: 'Tous domaines',
+    university: '',
+    degree: '',
+    city: '',
+    professionalSummary: '',
+    skills: [],
+  );
+
+  factory CvVersionData.fromRow(Map<String, dynamic> row) {
+    final rawSkills = row['skills'];
+    return CvVersionData(
+      id: row['id'] as String? ?? '',
+      label: (row['label'] as String? ?? '').trim(),
+      category: (row['category'] as String? ?? 'Tous domaines').trim(),
+      university: (row['university'] as String? ?? '').trim(),
+      degree: (row['degree'] as String? ?? '').trim(),
+      city: (row['city'] as String? ?? '').trim(),
+      professionalSummary: (row['professional_summary'] as String? ?? '')
+          .trim(),
+      skills: rawSkills is List
+          ? rawSkills
+                .map((value) => value is Map ? value['name'] : value)
+                .whereType<String>()
+                .map((value) => value.trim())
+                .where((value) => value.isNotEmpty)
+                .toList()
+          : const [],
+      createdAt: DateTime.tryParse(row['created_at'] as String? ?? ''),
+      updatedAt: DateTime.tryParse(row['updated_at'] as String? ?? ''),
+    );
+  }
+
+  final String id;
+  final String label;
+  final String category;
+  final String university;
+  final String degree;
+  final String city;
+  final String professionalSummary;
+  final List<String> skills;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  CvVersionData copyWith({
+    String? label,
+    String? category,
+    String? university,
+    String? degree,
+    String? city,
+    String? professionalSummary,
+    List<String>? skills,
+  }) => CvVersionData(
+    id: id,
+    label: label ?? this.label,
+    category: category ?? this.category,
+    university: university ?? this.university,
+    degree: degree ?? this.degree,
+    city: city ?? this.city,
+    professionalSummary: professionalSummary ?? this.professionalSummary,
+    skills: skills ?? this.skills,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+  );
+
+  Map<String, dynamic> toRow() => {
+    'label': label.trim(),
+    'category': category,
+    'university': university.trim(),
+    'degree': degree.trim(),
+    'city': city.trim(),
+    'professional_summary': professionalSummary.trim(),
+    'skills': skills
+        .map((skill) => {'name': skill.trim(), 'level': 'declared'})
+        .toList(),
+    'updated_at': DateTime.now().toUtc().toIso8601String(),
+  };
+}
+
 class UserWorkspaceState {
   const UserWorkspaceState({
     required this.jobs,
@@ -474,6 +574,61 @@ class WerklyRepository {
         })
         .eq('id', user.id);
     return path;
+  }
+
+  Future<List<CvVersionData>> listCvVersions() async {
+    final user = currentUser;
+    if (user == null) return const [];
+    final rows = await _client
+        .from('cv_versions')
+        .select()
+        .eq('user_id', user.id)
+        .order('created_at');
+    return (rows as List)
+        .map(
+          (row) => CvVersionData.fromRow(Map<String, dynamic>.from(row as Map)),
+        )
+        .toList();
+  }
+
+  Future<CvVersionData> createCvVersion(CvVersionData version) async {
+    final user = currentUser;
+    if (user == null) {
+      throw AuthException(_tr('errorSignInManageCvVersions'));
+    }
+    final row = await _client
+        .from('cv_versions')
+        .insert({...version.toRow(), 'user_id': user.id})
+        .select()
+        .single();
+    return CvVersionData.fromRow(Map<String, dynamic>.from(row));
+  }
+
+  Future<CvVersionData> updateCvVersion(CvVersionData version) async {
+    final user = currentUser;
+    if (user == null) {
+      throw AuthException(_tr('errorSignInManageCvVersions'));
+    }
+    final row = await _client
+        .from('cv_versions')
+        .update(version.toRow())
+        .eq('id', version.id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+    return CvVersionData.fromRow(Map<String, dynamic>.from(row));
+  }
+
+  Future<void> deleteCvVersion(String id) async {
+    final user = currentUser;
+    if (user == null) {
+      throw AuthException(_tr('errorSignInManageCvVersions'));
+    }
+    await _client
+        .from('cv_versions')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
   }
 
   Future<UserProfileData> analyzeCv() async {
