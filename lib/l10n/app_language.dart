@@ -2409,6 +2409,11 @@ class AppStrings {
       'Melde dich an, um deine Lebensläufe zu verwalten.',
       'Sign in to manage your CV versions.',
     ],
+    'cvVersionsWritingHelp': [
+      'Besoin d’aide pour rédiger ? anschreiben.com',
+      'Brauchst du Schreibhilfe? anschreiben.com',
+      'Need writing help? anschreiben.com',
+    ],
     'moderationPending': ['En attente', 'Ausstehend', 'Pending'],
     'moderationApproved': ['Approuvée', 'Genehmigt', 'Approved'],
     'moderationRejected': ['Refusée', 'Abgelehnt', 'Rejected'],

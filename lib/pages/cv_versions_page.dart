@@ -1,9 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../data/werkly_repository.dart';
 import '../l10n/app_language.dart';
 
+const _writingHelpUrl = 'https://anschreiben.com/';
+
+Future<void> _openWritingHelp(BuildContext context) async {
+  final uri = Uri.parse(_writingHelpUrl);
+  final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!opened && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.tr('jobOpenFailed'))));
+  }
+}
+
 const _ink = Color(0xFF17231F);
+const _green = Color(0xFF2F6B55);
 const _cream = Color(0xFFF7F7F2);
 const _line = Color(0xFFE7EAE4);
 const _muted = Color(0xFF718079);
@@ -183,6 +197,8 @@ class _CvVersionsPageState extends State<CvVersionsPage> {
                   context.tr('cvVersionsSubtitle'),
                   style: const TextStyle(color: _muted, fontSize: 13),
                 ),
+                const SizedBox(height: 8),
+                _WritingHelpLink(onTap: () => _openWritingHelp(context)),
                 const SizedBox(height: 16),
                 for (final version in _versions) ...[
                   _CvVersionCard(
@@ -224,11 +240,45 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(color: _muted, fontSize: 13),
             ),
+            const SizedBox(height: 12),
+            _WritingHelpLink(onTap: () => _openWritingHelp(context)),
             const SizedBox(height: 20),
             FilledButton.icon(
               onPressed: onCreate,
               icon: const Icon(Icons.add_rounded),
               label: Text(context.tr('addCvVersion')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WritingHelpLink extends StatelessWidget {
+  const _WritingHelpLink({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.open_in_new_rounded, size: 14, color: _green),
+            const SizedBox(width: 6),
+            Text(
+              context.tr('cvVersionsWritingHelp'),
+              style: const TextStyle(
+                color: _green,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
