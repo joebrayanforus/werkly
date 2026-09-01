@@ -1823,6 +1823,7 @@ class _HomePageState extends State<HomePage> {
     profileSkills: (cvVersion?.skills.isNotEmpty ?? false)
         ? cvVersion!.skills
         : _profile.skills,
+    experiences: cvVersion?.experiences ?? const [],
     jobTitle: job.title,
     company: job.company,
     jobLocation: job.location,
@@ -2437,7 +2438,11 @@ class _HomePageState extends State<HomePage> {
   Future<void> _openCvVersions() async {
     await Navigator.of(
       context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const CvVersionsPage()));
+    ).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CvVersionsPage(profile: _profile),
+      ),
+    );
     if (!mounted) return;
     try {
       final versions = await _repository.listCvVersions();

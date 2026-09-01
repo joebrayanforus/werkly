@@ -281,7 +281,7 @@ CompatibilityBreakdown calculateJobCompatibility({
   final cautions = <String>[
     if (requirements.isEmpty) tr('compatNoStructuredSkills'),
     if (missing.isNotEmpty)
-      tr('compatMissingSkills', {'count': missing.length}),
+      tr('compatMissingSkills', {'skills': missing.join(', ')}),
     if (requiredGerman != null && languageScore < 70)
       tr('compatGermanReview', {'detail': languageDetail}),
     if (minimumDesiredSalary > 0 && hourlyMin == null)

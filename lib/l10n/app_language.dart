@@ -828,9 +828,9 @@ class AppStrings {
       'The job does not provide enough structured skills, so this criterion is excluded from the score.',
     ],
     'compatMissingSkills': [
-      '{count} compétence(s) reste(nt) à confirmer.',
-      '{count} Kompetenz(en) müssen noch bestätigt werden.',
-      '{count} skill(s) still need to be confirmed.',
+      'Ajoute ces compétences à ton CV pour améliorer ce score : {skills}.',
+      'Füge diese Kompetenzen zu deinem Lebenslauf hinzu, um diesen Wert zu verbessern: {skills}.',
+      'Add these skills to your CV to improve this score: {skills}.',
     ],
     'compatGermanReview': [
       'Niveau d’allemand à vérifier : {detail}.',
@@ -2359,6 +2359,11 @@ class AppStrings {
       'e.g. Software Engineering',
     ],
     'cvVersionCategory': ['Domaine ciblé', 'Zielbereich', 'Target field'],
+    'prefillFromAnalysis': [
+      'Reprendre depuis mon CV analysé',
+      'Aus analysiertem Lebenslauf übernehmen',
+      'Copy from my analyzed CV',
+    ],
     'cvVersionLabelRequired': [
       'Donne un nom à cette version',
       'Gib dieser Version einen Namen',

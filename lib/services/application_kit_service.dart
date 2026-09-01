@@ -16,6 +16,7 @@ class ApplicationKitData {
     required this.city,
     required this.summary,
     required this.profileSkills,
+    this.experiences = const [],
     required this.jobTitle,
     required this.company,
     required this.jobLocation,
@@ -35,6 +36,7 @@ class ApplicationKitData {
   final String city;
   final String summary;
   final List<String> profileSkills;
+  final List<Map<String, dynamic>> experiences;
   final String jobTitle;
   final String company;
   final String jobLocation;
@@ -294,6 +296,14 @@ class ApplicationKitService {
                 : data.summary.trim(),
             style: const pw.TextStyle(fontSize: 11, lineSpacing: 3),
           ),
+          if (data.experiences.isNotEmpty) ...[
+            pw.SizedBox(height: 18),
+            _sectionTitle(strings.get('experiences')),
+            for (final experience in data.experiences) ...[
+              _experienceEntry(experience),
+              pw.SizedBox(height: 8),
+            ],
+          ],
           pw.SizedBox(height: 18),
           _skillSection(
             strings.get('pdfMatchingSkills'),
@@ -460,6 +470,40 @@ class ApplicationKitService {
       ),
     ),
   );
+
+  static pw.Widget _experienceEntry(Map<String, dynamic> experience) {
+    final title = experience['title']?.toString().trim() ?? '';
+    final organization = experience['organization']?.toString().trim() ?? '';
+    final period = experience['period']?.toString().trim() ?? '';
+    final header = [
+      title,
+      organization,
+    ].where((value) => value.isNotEmpty).join(' - ');
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                header,
+                style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold),
+              ),
+            ),
+            if (period.isNotEmpty)
+              pw.Text(
+                period,
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColor.fromInt(0xFF718079),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
 
   static pw.Widget _skillSection(
     String title,

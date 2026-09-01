@@ -201,6 +201,7 @@ class CvVersionData {
     required this.city,
     required this.professionalSummary,
     required this.skills,
+    this.experiences = const [],
     this.createdAt,
     this.updatedAt,
   });
@@ -214,10 +215,12 @@ class CvVersionData {
     city: '',
     professionalSummary: '',
     skills: [],
+    experiences: [],
   );
 
   factory CvVersionData.fromRow(Map<String, dynamic> row) {
     final rawSkills = row['skills'];
+    final rawExperiences = row['experiences'];
     return CvVersionData(
       id: row['id'] as String? ?? '',
       label: (row['label'] as String? ?? '').trim(),
@@ -235,6 +238,9 @@ class CvVersionData {
                 .where((value) => value.isNotEmpty)
                 .toList()
           : const [],
+      experiences: rawExperiences is List
+          ? rawExperiences.whereType<Map>().map(Map<String, dynamic>.from).toList()
+          : const [],
       createdAt: DateTime.tryParse(row['created_at'] as String? ?? ''),
       updatedAt: DateTime.tryParse(row['updated_at'] as String? ?? ''),
     );
@@ -248,6 +254,7 @@ class CvVersionData {
   final String city;
   final String professionalSummary;
   final List<String> skills;
+  final List<Map<String, dynamic>> experiences;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -259,6 +266,7 @@ class CvVersionData {
     String? city,
     String? professionalSummary,
     List<String>? skills,
+    List<Map<String, dynamic>>? experiences,
   }) => CvVersionData(
     id: id,
     label: label ?? this.label,
@@ -268,6 +276,7 @@ class CvVersionData {
     city: city ?? this.city,
     professionalSummary: professionalSummary ?? this.professionalSummary,
     skills: skills ?? this.skills,
+    experiences: experiences ?? this.experiences,
     createdAt: createdAt,
     updatedAt: updatedAt,
   );
@@ -282,6 +291,7 @@ class CvVersionData {
     'skills': skills
         .map((skill) => {'name': skill.trim(), 'level': 'declared'})
         .toList(),
+    'experiences': experiences,
     'updated_at': DateTime.now().toUtc().toIso8601String(),
   };
 }

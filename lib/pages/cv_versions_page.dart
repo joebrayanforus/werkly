@@ -58,8 +58,17 @@ String _localizedCategoryLabel(BuildContext context, String value) {
   return (language == AppLanguage.de ? german : english)[value] ?? value;
 }
 
+/// Mirrors cv_analysis.dart's private `_analysisItems` helper for reading a
+/// jsonb list column defensively -- duplicated locally for the same reason
+/// as `_localizedCategoryLabel` above.
+List<Map<String, dynamic>> _analysisItems(Object? value) => value is List
+    ? value.whereType<Map>().map(Map<String, dynamic>.from).toList()
+    : const [];
+
 class CvVersionsPage extends StatefulWidget {
-  const CvVersionsPage({super.key});
+  const CvVersionsPage({super.key, required this.profile});
+
+  final UserProfileData profile;
 
   @override
   State<CvVersionsPage> createState() => _CvVersionsPageState();
@@ -101,8 +110,10 @@ class _CvVersionsPageState extends State<CvVersionsPage> {
   Future<void> _createOrEdit({CvVersionData? existing}) async {
     final result = await showDialog<CvVersionData>(
       context: context,
-      builder: (context) =>
-          _CvVersionEditor(version: existing ?? CvVersionData.draft()),
+      builder: (context) => _CvVersionEditor(
+        version: existing ?? CvVersionData.draft(),
+        profile: widget.profile,
+      ),
     );
     if (result == null || !mounted) return;
     try {
@@ -356,6 +367,20 @@ class _CvVersionCard extends StatelessWidget {
             const SizedBox(height: 6),
             Text(subtitle, style: const TextStyle(color: _muted, fontSize: 12)),
           ],
+          if (version.experiences.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            for (final experience in version.experiences)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  [
+                    experience['title']?.toString().trim() ?? '',
+                    experience['organization']?.toString().trim() ?? '',
+                  ].where((value) => value.isNotEmpty).join(' · '),
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ),
+          ],
           if (version.skills.isNotEmpty) ...[
             const SizedBox(height: 10),
             Wrap(
@@ -385,9 +410,10 @@ class _CvVersionCard extends StatelessWidget {
 // own state, not the caller, so a back-button race during the dialog's exit
 // transition can't touch a disposed controller.
 class _CvVersionEditor extends StatefulWidget {
-  const _CvVersionEditor({required this.version});
+  const _CvVersionEditor({required this.version, required this.profile});
 
   final CvVersionData version;
+  final UserProfileData profile;
 
   @override
   State<_CvVersionEditor> createState() => _CvVersionEditorState();
@@ -401,7 +427,12 @@ class _CvVersionEditorState extends State<_CvVersionEditor> {
   late final TextEditingController _skills;
   late final TextEditingController _summary;
   late String _category;
+  late List<Map<String, dynamic>> _experiences;
   String? _labelError;
+
+  bool get _hasAnalyzedCv =>
+      _analysisItems(widget.profile.cvAnalysis['experiences']).isNotEmpty ||
+      widget.profile.skills.isNotEmpty;
 
   @override
   void initState() {
@@ -415,6 +446,32 @@ class _CvVersionEditorState extends State<_CvVersionEditor> {
       text: widget.version.professionalSummary,
     );
     _category = widget.version.category;
+    _experiences = List.of(widget.version.experiences);
+  }
+
+  // Explicit, user-triggered copy from the already-analyzed base CV --
+  // never automatic -- so a version can start from real experience/skills
+  // instead of an empty keyword list, matching what the app already knows
+  // about the user rather than asking them to retype it.
+  void _prefillFromAnalysis() {
+    setState(() {
+      if (_degree.text.trim().isEmpty) _degree.text = widget.profile.degree;
+      if (_university.text.trim().isEmpty) {
+        _university.text = widget.profile.university;
+      }
+      if (_city.text.trim().isEmpty) _city.text = widget.profile.city;
+      if (_summary.text.trim().isEmpty) {
+        _summary.text = widget.profile.professionalSummary;
+      }
+      if (_skills.text.trim().isEmpty) {
+        _skills.text = widget.profile.skills.join(', ');
+      }
+      if (_experiences.isEmpty) {
+        _experiences = _analysisItems(
+          widget.profile.cvAnalysis['experiences'],
+        );
+      }
+    });
   }
 
   @override
@@ -450,6 +507,7 @@ class _CvVersionEditorState extends State<_CvVersionEditor> {
         city: _city.text,
         professionalSummary: _summary.text,
         skills: parsedSkills,
+        experiences: _experiences,
       ),
     );
   }
@@ -475,6 +533,17 @@ class _CvVersionEditorState extends State<_CvVersionEditor> {
                   if (_labelError != null) setState(() => _labelError = null);
                 },
               ),
+              if (_hasAnalyzedCv) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: _prefillFromAnalysis,
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+                    label: Text(context.tr('prefillFromAnalysis')),
+                  ),
+                ),
+              ],
               const SizedBox(height: 10),
               DropdownButtonFormField<String>(
                 initialValue: _category,
@@ -525,6 +594,49 @@ class _CvVersionEditorState extends State<_CvVersionEditor> {
                   labelText: context.tr('professionalSummary'),
                 ),
               ),
+              if (_experiences.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    context.tr('experiences'),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: _muted,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                for (var i = 0; i < _experiences.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            [
+                              _experiences[i]['title']?.toString().trim() ??
+                                  '',
+                              _experiences[i]['organization']
+                                      ?.toString()
+                                      .trim() ??
+                                  '',
+                            ].where((value) => value.isNotEmpty).join(' · '),
+                            style: const TextStyle(fontSize: 12.5),
+                          ),
+                        ),
+                        IconButton(
+                          iconSize: 18,
+                          visualDensity: VisualDensity.compact,
+                          onPressed: () =>
+                              setState(() => _experiences.removeAt(i)),
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ],
           ),
         ),
