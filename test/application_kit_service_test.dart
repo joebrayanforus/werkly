@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:werkstudent_ai/l10n/app_language.dart';
 import 'package:werkstudent_ai/services/application_kit_service.dart';
+import 'package:werkstudent_ai/services/pdf_download_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,41 +36,40 @@ void main() {
 
     expect(bytes.length, greaterThan(3000));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+    expect(isUsablePdf(bytes), isTrue);
 
     final sample = File('tmp/pdfs/werkly_application_kit_sample.pdf');
     await sample.parent.create(recursive: true);
     await sample.writeAsBytes(bytes, flush: true);
   });
 
-  test(
-    'keeps boilerplate job tags out of matched and missing skills',
-    () {
-      final data = ApplicationKitData(
-        applicantName: 'Alex Martin',
-        email: 'alex@example.com',
-        phone: '',
-        address: '',
-        degree: 'Master Informatik',
-        university: 'TU München',
-        city: 'München',
-        summary: 'Flutter developer with practical project experience.',
-        profileSkills: const ['Flutter'],
-        jobTitle: 'Werkstudent Erneuerbare Energien',
-        company: 'Example GmbH',
-        jobLocation: 'München',
-        jobTags: const ['Werkstudent', 'IT', 'Erneuerbare Energien', 'Flutter'],
-        sourceUrl: 'https://example.com/job',
-        coverLetter: 'Dear Hiring Team,\n\nI am pleased to apply.\n\nKind regards,\nAlex Martin',
-        generatedAt: DateTime.utc(2026, 8, 9),
-        language: AppLanguage.en,
-      );
+  test('keeps boilerplate job tags out of matched and missing skills', () {
+    final data = ApplicationKitData(
+      applicantName: 'Alex Martin',
+      email: 'alex@example.com',
+      phone: '',
+      address: '',
+      degree: 'Master Informatik',
+      university: 'TU München',
+      city: 'München',
+      summary: 'Flutter developer with practical project experience.',
+      profileSkills: const ['Flutter'],
+      jobTitle: 'Werkstudent Erneuerbare Energien',
+      company: 'Example GmbH',
+      jobLocation: 'München',
+      jobTags: const ['Werkstudent', 'IT', 'Erneuerbare Energien', 'Flutter'],
+      sourceUrl: 'https://example.com/job',
+      coverLetter:
+          'Dear Hiring Team,\n\nI am pleased to apply.\n\nKind regards,\nAlex Martin',
+      generatedAt: DateTime.utc(2026, 8, 9),
+      language: AppLanguage.en,
+    );
 
-      expect(data.matchedSkills, ['Flutter']);
-      expect(data.missingSkills, ['Erneuerbare Energien']);
-      expect(data.missingSkills, isNot(contains('Werkstudent')));
-      expect(data.missingSkills, isNot(contains('IT')));
-    },
-  );
+    expect(data.matchedSkills, ['Flutter']);
+    expect(data.missingSkills, ['Erneuerbare Energien']);
+    expect(data.missingSkills, isNot(contains('Werkstudent')));
+    expect(data.missingSkills, isNot(contains('IT')));
+  });
 
   test('generates a single-page PDF for just the letter', () async {
     final bytes = await ApplicationKitService.buildLetterPdf(
@@ -96,10 +97,16 @@ void main() {
 
     expect(bytes.length, greaterThan(1000));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+    expect(isUsablePdf(bytes), isTrue);
 
     final sample = File('tmp/pdfs/werkly_letter_only_sample.pdf');
     await sample.parent.create(recursive: true);
     await sample.writeAsBytes(bytes, flush: true);
+  });
+
+  test('rejects a zero-byte file before any download is offered', () {
+    expect(isUsablePdf(Uint8List(0)), isFalse);
+    expect(isUsablePdf(Uint8List.fromList('%PDF-'.codeUnits)), isFalse);
   });
 
   test(
@@ -148,38 +155,44 @@ void main() {
       expect(
         pageObjectCount,
         greaterThanOrEqualTo(2),
-        reason: 'a letter this long must flow onto a second page, not be cut off',
+        reason:
+            'a letter this long must flow onto a second page, not be cut off',
       );
     },
   );
 
-  ApplicationKitData letterData({required String phone, required String address}) =>
-      ApplicationKitData(
-        applicantName: 'Alex Martin',
-        email: 'alex@example.com',
-        phone: phone,
-        address: address,
-        degree: 'Master Informatik',
-        university: 'TU München',
-        city: 'München',
-        summary: 'Flutter developer with practical project experience.',
-        profileSkills: const ['Flutter', 'Dart', 'Git'],
-        jobTitle: 'Werkstudent Software Engineering',
-        company: 'Example GmbH',
-        jobLocation: 'München',
-        jobTags: const ['Flutter', 'REST API', 'Git'],
-        sourceUrl: 'https://example.com/job',
-        coverLetter:
-            'Sehr geehrte Damen und Herren,\n\nmit großem Interesse bewerbe ich mich.\n\nMit freundlichen Grüßen\nAlex Martin',
-        generatedAt: DateTime.utc(2026, 8, 9),
-        language: AppLanguage.de,
-      );
+  ApplicationKitData letterData({
+    required String phone,
+    required String address,
+  }) => ApplicationKitData(
+    applicantName: 'Alex Martin',
+    email: 'alex@example.com',
+    phone: phone,
+    address: address,
+    degree: 'Master Informatik',
+    university: 'TU München',
+    city: 'München',
+    summary: 'Flutter developer with practical project experience.',
+    profileSkills: const ['Flutter', 'Dart', 'Git'],
+    jobTitle: 'Werkstudent Software Engineering',
+    company: 'Example GmbH',
+    jobLocation: 'München',
+    jobTags: const ['Flutter', 'REST API', 'Git'],
+    sourceUrl: 'https://example.com/job',
+    coverLetter:
+        'Sehr geehrte Damen und Herren,\n\nmit großem Interesse bewerbe ich mich.\n\nMit freundlichen Grüßen\nAlex Martin',
+    generatedAt: DateTime.utc(2026, 8, 9),
+    language: AppLanguage.de,
+  );
 
   test(
     'builds successfully whether or not phone/address are filled in',
     () async {
       final withContactDetails = await ApplicationKitService.buildLetterPdf(
-        letterData(phone: '+49 151 23456789', address: 'Musterstraße 12, 80331 München'),
+        letterData(
+          phone: '+49 151 23456789',
+          address: 'Musterstraße 12, 80331 München',
+        ),
       );
       final withoutContactDetails = await ApplicationKitService.buildLetterPdf(
         letterData(phone: '', address: ''),

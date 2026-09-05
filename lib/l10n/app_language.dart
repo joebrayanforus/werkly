@@ -667,6 +667,11 @@ class AppStrings {
       'Originalangebot auf {source} ansehen',
       'View original job on {source}',
     ],
+    'previewOriginalJobOn': [
+      'Aperçu de la page originale sur {source}',
+      'Originalseite auf {source} ansehen',
+      'Preview the original page on {source}',
+    ],
     'postedHours': ['Il y a {count} h', 'Vor {count} Std.', '{count}h ago'],
     'postedDays': ['Il y a {count} j', 'Vor {count} Tagen', '{count}d ago'],
     'postedToday': ['Aujourd’hui', 'Heute', 'Today'],

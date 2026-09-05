@@ -550,9 +550,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleLanguageChanged() {
-    if (mounted) {
-      setState(() => _jobCatalog = _jobRows.map(_jobFromRow).toList());
-    }
+    unawaited(_rebuildJobCatalogForLanguageChange());
+  }
+
+  Future<void> _rebuildJobCatalogForLanguageChange() async {
+    final jobCatalog = await _buildJobCatalog(_jobRows);
+    if (mounted) setState(() => _jobCatalog = jobCatalog);
   }
 
   void _handleOpenedNotification() {

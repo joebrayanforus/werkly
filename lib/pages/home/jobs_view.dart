@@ -1,5 +1,31 @@
 part of '../home_page.dart';
 
+/// Opens the publisher's live job page in an in-app browser on mobile.  This
+/// gives students the real visual context from the employer or job board
+/// without copying, screenshotting, or storing third-party page content.
+Future<void> _previewOriginalJobPage(BuildContext context, Job job) async {
+  final uri = Uri.tryParse(job.sourceUrl);
+  if (uri == null || !uri.hasScheme) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.tr('originalLinkUnavailable'))),
+    );
+    return;
+  }
+
+  var opened = await launchUrl(
+    uri,
+    mode: kIsWeb ? LaunchMode.platformDefault : LaunchMode.inAppBrowserView,
+  );
+  if (!opened && !kIsWeb) {
+    opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+  if (!opened && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.tr('jobOpenFailed'))));
+  }
+}
+
 class _JobsView extends StatelessWidget {
   const _JobsView({
     required this.jobs,
@@ -452,6 +478,21 @@ class _JobDetail extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.route_rounded, size: 17),
                 label: Text(context.tr('realRoute')),
+              ),
+            ],
+            if (job.sourceUrl.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _previewOriginalJobPage(context, job),
+                  icon: const Icon(Icons.preview_outlined, size: 18),
+                  label: Text(
+                    context.trFormat('previewOriginalJobOn', {
+                      'source': _localizedSourceLabel(context, job.source),
+                    }),
+                  ),
+                ),
               ),
             ],
             const SizedBox(height: 26),
