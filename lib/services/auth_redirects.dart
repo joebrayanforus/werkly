@@ -20,7 +20,7 @@ String werklyPasswordRecoveryRedirect({bool? web, Uri? currentUri}) {
         userInfo: uri.userInfo,
         host: uri.host,
         port: uri.hasPort ? uri.port : null,
-        path: '/',
+        path: uri.path.isEmpty ? '/' : uri.path,
         queryParameters: const {'auth': 'recovery'},
       ).toString();
     }
@@ -37,7 +37,7 @@ String werklyGoogleOAuthRedirect({bool? web, Uri? currentUri}) {
         userInfo: uri.userInfo,
         host: uri.host,
         port: uri.hasPort ? uri.port : null,
-        path: '/',
+        path: uri.path.isEmpty ? '/' : uri.path,
       ).toString();
     }
   }
