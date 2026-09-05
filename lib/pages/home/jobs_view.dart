@@ -130,94 +130,52 @@ class _JobsView extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 15),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final item in [
-                      'Pour toi',
-                      'Nouvelles',
-                      'Remote',
-                      'Sauvegardées',
-                    ]) ...[
-                      _FilterChip(
-                        label: _localizedFilterLabel(context, item),
-                        selected: filter == item,
-                        onTap: () => onFilter(item),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    OutlinedButton.icon(
-                      onPressed: onMoreFilters,
-                      icon: const Icon(Icons.tune_rounded, size: 17),
-                      label: Text(context.tr('moreFilters')),
-                    ),
-                    const SizedBox(width: 8),
-                    OutlinedButton.icon(
-                      onPressed: onSaveSearch,
-                      icon: const Icon(Icons.bookmark_add_outlined, size: 17),
-                      label: Text(context.tr('save')),
-                    ),
-                    const SizedBox(width: 8),
-                    if (savedSearchCount > 0) ...[
-                      TextButton.icon(
-                        onPressed: onManageSearches,
-                        icon: const Icon(Icons.saved_search_rounded, size: 18),
-                        label: Text(
-                          context.trFormat('savedSearches', {
-                            'count': savedSearchCount,
-                          }),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    _JobSortMenu(value: sort, onChanged: onSort),
-                    const SizedBox(width: 8),
-                    IconButton.filledTonal(
-                      tooltip: context.tr('refreshJobs'),
-                      onPressed: isRefreshing ? null : onRefresh,
-                      icon: isRefreshing
-                          ? const SizedBox.square(
-                              dimension: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.refresh_rounded),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              _PartnerSearches(onOpen: onExternalSearch),
-              const SizedBox(height: 16),
               Expanded(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       flex: 5,
-                      child: jobs.isEmpty
-                          ? const _EmptyJobs()
-                          : RefreshIndicator(
-                              onRefresh: onRefresh,
-                              child: ListView.separated(
-                                physics: const AlwaysScrollableScrollPhysics(),
-                                padding: const EdgeInsets.only(bottom: 110),
-                                itemCount: jobs.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(height: 11),
-                                itemBuilder: (context, index) => SizedBox(
-                                  height: 264,
-                                  child: _JobCard(
-                                    job: jobs[index],
-                                    saved: savedJobs.contains(jobs[index].id),
-                                    selected: jobs[index].id == selectedJob.id,
-                                    compact: true,
-                                    onTap: () => onOpenJob(jobs[index]),
-                                    onSave: () => onToggleSaved(jobs[index].id),
-                                  ),
+                      // The filter bar and "search also on" box are folded
+                      // into this same scrollable (instead of sitting above
+                      // it as fixed-height siblings) so a short viewport
+                      // (e.g. a phone in landscape) can scroll past them
+                      // instead of overflowing -- see the RenderFlex
+                      // overflow this used to throw when the header's
+                      // natural height exceeded the available space.
+                      child: RefreshIndicator(
+                        onRefresh: onRefresh,
+                        child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.only(bottom: 110),
+                          itemCount: 1 + (jobs.isEmpty ? 1 : jobs.length),
+                          separatorBuilder: (_, index) =>
+                              SizedBox(height: index == 0 ? 16 : 11),
+                          itemBuilder: (context, index) {
+                            if (index == 0) return _buildFilterBar(context);
+                            if (jobs.isEmpty) {
+                              return ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  minHeight: 280,
                                 ),
+                                child: const _EmptyJobs(),
+                              );
+                            }
+                            final job = jobs[index - 1];
+                            return SizedBox(
+                              height: 264,
+                              child: _JobCard(
+                                job: job,
+                                saved: savedJobs.contains(job.id),
+                                selected: job.id == selectedJob.id,
+                                compact: true,
+                                onTap: () => onOpenJob(job),
+                                onSave: () => onToggleSaved(job.id),
                               ),
-                            ),
+                            );
+                          },
+                        ),
+                      ),
                     ),
                     if (showDetail) ...[
                       const SizedBox(width: 18),
@@ -240,6 +198,73 @@ class _JobsView extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFilterBar(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final item in [
+                'Pour toi',
+                'Nouvelles',
+                'Remote',
+                'Sauvegardées',
+              ]) ...[
+                _FilterChip(
+                  label: _localizedFilterLabel(context, item),
+                  selected: filter == item,
+                  onTap: () => onFilter(item),
+                ),
+                const SizedBox(width: 8),
+              ],
+              OutlinedButton.icon(
+                onPressed: onMoreFilters,
+                icon: const Icon(Icons.tune_rounded, size: 17),
+                label: Text(context.tr('moreFilters')),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton.icon(
+                onPressed: onSaveSearch,
+                icon: const Icon(Icons.bookmark_add_outlined, size: 17),
+                label: Text(context.tr('save')),
+              ),
+              const SizedBox(width: 8),
+              if (savedSearchCount > 0) ...[
+                TextButton.icon(
+                  onPressed: onManageSearches,
+                  icon: const Icon(Icons.saved_search_rounded, size: 18),
+                  label: Text(
+                    context.trFormat('savedSearches', {
+                      'count': savedSearchCount,
+                    }),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              _JobSortMenu(value: sort, onChanged: onSort),
+              const SizedBox(width: 8),
+              IconButton.filledTonal(
+                tooltip: context.tr('refreshJobs'),
+                onPressed: isRefreshing ? null : onRefresh,
+                icon: isRefreshing
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _PartnerSearches(onOpen: onExternalSearch),
+      ],
     );
   }
 }
