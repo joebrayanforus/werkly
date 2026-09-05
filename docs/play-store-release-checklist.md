@@ -5,7 +5,7 @@
 - [ ] Google developer identity approved.
 - [ ] Android device verification completed in the Play Console mobile app.
 - [ ] Custom SMTP enabled and confirmation/password-reset emails tested.
-- [ ] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page.
+- [ ] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page (pages pushed to `gh-pages`; enabling Pages in repo Settings is still pending).
 - [x] Legal controller name, address and support email added to the privacy policy.
 - [x] Privacy policy is readable from registration and from the in-app profile.
 - [x] Generated AI answers have an in-app reporting flow backed by an RLS-protected report table.
@@ -34,7 +34,7 @@
 
 - [x] Target Android 16 / API 36 (Google Play requirement from 31 August 2026).
 - [x] Declare the Android 13+ notification permission; the app still asks users before sending alerts.
-- [ ] Build and verify the signed `1.0.0+3` Android App Bundle locally.
+- [x] Build and verify the signed `1.0.0+3` Android App Bundle locally (5 September 2026, SHA-256 `5AFE5C82F42A8B8A7AA89DD008DBAD3C47F2D66FA113F40F855042618DCAFBC2`).
 - [ ] Upload the new `build/app/outputs/bundle/release/app-release.aab` to **Internal testing** after the local release build succeeds.
 - [ ] Run internal testing on at least one real Android device.
 - [ ] Test signup, confirmation, password recovery, CV upload/analysis, city location, map, commute, PDF generation, notifications and deletion.

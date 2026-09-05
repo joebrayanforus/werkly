@@ -24,42 +24,63 @@ after every final build and upload only that exact file.
 - Package: `de.werkly.app`
 - Android 13+ notifications: declared and requested only when the user enables them
 - Build command: `powershell -ExecutionPolicy Bypass -File tooling/build_android_release.ps1`
-- Built: 24 August 2026 at 10:23 Europe/Berlin
-- Size: 63.71 MB
-- SHA-256: `18B7E582FE462CB69A9901309E8E566243BFF99EDA581415674641F01A1F74AB`
 
-The `versionCode 3` bundle must be built after these final changes, checked on a
-real device, then uploaded to the **Internal testing** track. The prior bundle
-below remains a historical verification record and must not be uploaded again.
+Latest bundle — this is the one to check on a real device, then upload to
+**Internal testing** (reflects the CV versions feature, embedded-CV
+application kit, persisted application checklist and the two September UI
+fixes):
 
-Previously verified bundle:
+- Built: 5 September 2026 at 18:10 Europe/Berlin
+- Size: 67,765,316 bytes (64.6 MB)
+- SHA-256: `5AFE5C82F42A8B8A7AA89DD008DBAD3C47F2D66FA113F40F855042618DCAFBC2`
 
-- Built: 11 August 2026 at 04:52:37 Europe/Berlin
-- Size: 66,601,590 bytes
-- SHA-256: `33924290D0CBDEABEC80ABC1C625505FAF5AC33B36CEE7F2A5737B59A5C7F489`
-- Manifest: package `de.werkly.app`, `versionCode 2`, `versionName 1.0.0`,
-  target SDK 36
-- JAR signature verification: successful
+The bundles below are historical verification records and must not be
+uploaded again:
+
+- Built: 24 August 2026 at 10:23 Europe/Berlin — Size: 63.71 MB — SHA-256:
+  `18B7E582FE462CB69A9901309E8E566243BFF99EDA581415674641F01A1F74AB`
+- Built: 11 August 2026 at 04:52:37 Europe/Berlin — Size: 66,601,590 bytes —
+  SHA-256: `33924290D0CBDEABEC80ABC1C625505FAF5AC33B36CEE7F2A5737B59A5C7F489`
+  — manifest: package `de.werkly.app`, `versionCode 2`, `versionName 1.0.0`,
+  target SDK 36; JAR signature verification successful
 
 The deployable web package is in `build/web`; it contains both
 `privacy.html` and `account-deletion.html`.
 
+## Privacy and account-deletion pages: hosting status
+
+Pushed to the `gh-pages` branch on 5 September 2026 (commit `c30b4971`),
+containing only `privacy.html` and `account-deletion.html` at the branch
+root. **GitHub Pages still needs to be enabled** (repo Settings → Pages →
+Source: Deploy from a branch → `gh-pages` / `(root)` → Save) — this requires
+signing in as the repo owner, so it wasn't done automatically. Once enabled,
+the pages resolve at:
+
+- `https://joebrayanforus.github.io/werkly/privacy.html`
+- `https://joebrayanforus.github.io/werkly/account-deletion.html`
+
+Enter both URLs in Play Console (privacy policy field, and the
+account-deletion URL in Data safety). Note: only the two static pages are
+published this way, not the full Werkly web app, so the "Open Werkly" button
+on the account-deletion page won't resolve yet — its written instructions
+(delete via the mobile app, or email support) still work. Deploy the full
+`build/web` output to the same branch if that button should also work.
+
 ## Actions that require the developer account
 
-1. Wait until Google approves the developer identity and complete Android
-   device verification when requested.
-2. Deploy the Flutter web build together with `privacy.html` and
-   `account-deletion.html` to stable public HTTPS URLs. Enter those two URLs in
-   Play Console.
-3. Create the app in Play Console with default language German and package
+1. Enable GitHub Pages for the `gh-pages` branch (see above), then wait until
+   Google approves the developer identity and complete Android device
+   verification when requested.
+2. Create the app in Play Console with default language German and package
    `de.werkly.app`.
-4. Upload the store icon, feature graphic and at least two accurate phone
+3. Upload the store icon, feature graphic and at least two accurate phone
    screenshots captured from the final Android build.
-5. Complete Data safety, content rating, target audience, ads (none), app
-   access/review instructions and the account-deletion declaration.
-6. Upload the signed AAB to an internal test first. Run the smoke-test list in
+4. Complete Data safety, content rating, target audience, ads (none), app
+   access/review instructions and the account-deletion declaration, using the
+   two hosted URLs above.
+5. Upload the signed AAB to an internal test first. Run the smoke-test list in
    `docs/play-store-release-checklist.md` on a real Android phone.
-7. For a new personal developer account, start a closed test with at least 12
+6. For a new personal developer account, start a closed test with at least 12
    continuously opted-in testers for 14 days, then request production access.
 
 ## Review instructions draft
