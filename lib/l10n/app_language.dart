@@ -587,6 +587,26 @@ class AppStrings {
       'Dein Score wird aus deinen Kompetenzen und Präferenzen berechnet.',
       'Your score is calculated from your skills and preferences.',
     ],
+    'completeProfileSheetTitle': [
+      'Compléter mon profil',
+      'Profil vervollständigen',
+      'Complete your profile',
+    ],
+    'uploadCvRecommended': [
+      'Importer mon CV (recommandé)',
+      'Lebenslauf hochladen (empfohlen)',
+      'Upload my CV (recommended)',
+    ],
+    'uploadCvRecommendedHint': [
+      'Tes compétences sont détectées automatiquement.',
+      'Deine Kompetenzen werden automatisch erkannt.',
+      'Your skills are detected automatically.',
+    ],
+    'editPreferencesHint': [
+      'Choisis toi-même tes domaines et compétences.',
+      'Wähle Fachbereich und Kompetenzen selbst aus.',
+      'Manually choose your fields and skills.',
+    ],
     'jobsForYou': [
       '{count} offres pour toi',
       '{count} Jobs für dich',

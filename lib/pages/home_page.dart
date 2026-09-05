@@ -2653,6 +2653,8 @@ class _HomePageState extends State<HomePage> {
                                   onOpenMap: () => _selectPage(2),
                                   onOpenJob: _showJob,
                                   onToggleSaved: _toggleSaved,
+                                  onUploadCv: _uploadCv,
+                                  onEditPreferences: _editPreferences,
                                 ),
                                 1 => _JobsView(
                                   jobs: _visibleJobs,

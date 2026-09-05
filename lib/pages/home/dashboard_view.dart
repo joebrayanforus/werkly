@@ -11,6 +11,8 @@ class _DashboardView extends StatelessWidget {
     required this.onOpenMap,
     required this.onOpenJob,
     required this.onToggleSaved,
+    required this.onUploadCv,
+    required this.onEditPreferences,
   });
 
   final List<Job> jobs;
@@ -22,6 +24,8 @@ class _DashboardView extends StatelessWidget {
   final VoidCallback onOpenMap;
   final ValueChanged<Job> onOpenJob;
   final ValueChanged<int> onToggleSaved;
+  final VoidCallback onUploadCv;
+  final VoidCallback onEditPreferences;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +72,8 @@ class _DashboardView extends StatelessWidget {
                           child: _ProfileInsightCard(
                             profile: profile,
                             jobs: allJobs,
+                            onUploadCv: onUploadCv,
+                            onEditPreferences: onEditPreferences,
                           ),
                         ),
                       ],
@@ -83,7 +89,12 @@ class _DashboardView extends StatelessWidget {
                       onOpenMap: onOpenMap,
                     ),
                     const SizedBox(height: 18),
-                    _ProfileInsightCard(profile: profile, jobs: allJobs),
+                    _ProfileInsightCard(
+                      profile: profile,
+                      jobs: allJobs,
+                      onUploadCv: onUploadCv,
+                      onEditPreferences: onEditPreferences,
+                    ),
                   ],
                   const SizedBox(height: 26),
                   _SectionTitle(
@@ -492,10 +503,64 @@ class _MapPainter extends CustomPainter {
 }
 
 class _ProfileInsightCard extends StatelessWidget {
-  const _ProfileInsightCard({required this.profile, required this.jobs});
+  const _ProfileInsightCard({
+    required this.profile,
+    required this.jobs,
+    required this.onUploadCv,
+    required this.onEditPreferences,
+  });
 
   final UserProfileData profile;
   final List<Job> jobs;
+  final VoidCallback onUploadCv;
+  final VoidCallback onEditPreferences;
+
+  Future<void> _openCompleteProfileSheet(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  context.tr('completeProfileSheetTitle'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              const SizedBox(height: 6),
+              ListTile(
+                leading: const Icon(
+                  Icons.upload_file_rounded,
+                  color: _green,
+                ),
+                title: Text(context.tr('uploadCvRecommended')),
+                subtitle: Text(context.tr('uploadCvRecommendedHint')),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  onUploadCv();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.tune_rounded),
+                title: Text(context.tr('editPreferences')),
+                subtitle: Text(context.tr('editPreferencesHint')),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  onEditPreferences();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -593,34 +658,46 @@ class _ProfileInsightCard extends StatelessWidget {
               const SizedBox(height: 13),
             ],
             const SizedBox(height: 7),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF4E4),
+            Material(
+              color: const Color(0xFFFFF4E4),
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(
-                    Icons.lightbulb_outline_rounded,
-                    color: Color(0xFFAA681B),
-                    size: 19,
-                  ),
-                  const SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      profileSkills.isEmpty
-                          ? context.tr('addSkillsForScores')
-                          : context.tr('scoreUsesProfile'),
-                      style: const TextStyle(
-                        color: Color(0xFF765127),
-                        fontSize: 11,
-                        height: 1.35,
+                onTap: profileSkills.isEmpty
+                    ? () => _openCompleteProfileSheet(context)
+                    : null,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.lightbulb_outline_rounded,
+                        color: Color(0xFFAA681B),
+                        size: 19,
                       ),
-                    ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          profileSkills.isEmpty
+                              ? context.tr('addSkillsForScores')
+                              : context.tr('scoreUsesProfile'),
+                          style: const TextStyle(
+                            color: Color(0xFF765127),
+                            fontSize: 11,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                      if (profileSkills.isEmpty)
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Color(0xFFAA681B),
+                          size: 19,
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ],
