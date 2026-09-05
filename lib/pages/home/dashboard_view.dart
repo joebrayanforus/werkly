@@ -251,6 +251,11 @@ class _OpportunityMap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Pins show each job's compatibility match, so pick the best-scoring
+    // jobs rather than whatever happens to be first in the unsorted list --
+    // otherwise the pins can show 0% for jobs that just haven't been ranked
+    // against the profile yet.
+    final ranked = [...jobs]..sort((a, b) => b.match.compareTo(a.match));
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -290,29 +295,29 @@ class _OpportunityMap extends StatelessWidget {
                 ),
               ),
             ),
-            if (jobs.isNotEmpty)
+            if (ranked.isNotEmpty)
               Positioned(
                 left: 25,
                 bottom: 25,
-                child: _MapPin(label: '${jobs[0].match}', hot: true),
+                child: _MapPin(label: '${ranked[0].match}', hot: true),
               ),
-            if (jobs.length > 1)
+            if (ranked.length > 1)
               Positioned(
                 left: 190,
                 top: 105,
-                child: _MapPin(label: '${jobs[1].match}'),
+                child: _MapPin(label: '${ranked[1].match}'),
               ),
-            if (jobs.length > 2)
+            if (ranked.length > 2)
               Positioned(
                 right: 70,
                 top: 92,
-                child: _MapPin(label: '${jobs[2].match}'),
+                child: _MapPin(label: '${ranked[2].match}'),
               ),
-            if (jobs.length > 3)
+            if (ranked.length > 3)
               Positioned(
                 right: 140,
                 bottom: 62,
-                child: _MapPin(label: '${jobs[3].match}', hot: true),
+                child: _MapPin(label: '${ranked[3].match}', hot: true),
               ),
             Positioned(
               right: 18,
