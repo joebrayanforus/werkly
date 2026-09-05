@@ -11,15 +11,14 @@
         <td align="center">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #e7eae4;border-radius:20px;padding:32px">
             <tr><td style="font-size:26px;font-weight:800">Werkly</td></tr>
-            <tr><td style="padding-top:26px;font-size:24px;font-weight:800">Confirm your email address</td></tr>
-            <tr><td style="padding-top:12px;line-height:1.6;color:#62706a">Welcome to Werkly. Confirm your email address to save your profile, CV analysis, favourites and applications securely.</td></tr>
+            <tr><td style="padding-top:26px;font-size:24px;font-weight:800">{{ if eq .Data.preferred_language "de" }}Best&auml;tige deine E-Mail-Adresse{{ else if eq .Data.preferred_language "fr" }}Confirme ton adresse e-mail{{ else }}Confirm your email address{{ end }}</td></tr>
+            <tr><td style="padding-top:12px;line-height:1.6;color:#62706a">{{ if eq .Data.preferred_language "de" }}{{ if .Data.full_name }}Hallo {{ .Data.full_name }}, willkommen{{ else }}Willkommen{{ end }} bei Werkly. Best&auml;tige deine E-Mail-Adresse, um dein Profil, deine Lebenslauf-Analyse, Favoriten und Bewerbungen sicher zu speichern.{{ else if eq .Data.preferred_language "fr" }}{{ if .Data.full_name }}Bonjour {{ .Data.full_name }}, bienvenue{{ else }}Bienvenue{{ end }} sur Werkly. Confirme ton adresse e-mail pour enregistrer ton profil, l&rsquo;analyse de ton CV, tes favoris et tes candidatures en toute s&eacute;curit&eacute;.{{ else }}{{ if .Data.full_name }}Hi {{ .Data.full_name }}, welcome{{ else }}Welcome{{ end }} to Werkly. Confirm your email address to save your profile, CV analysis, favourites and applications securely.{{ end }}</td></tr>
             <tr>
               <td style="padding-top:26px">
-                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2f6b55;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:12px">Confirm my email</a>
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2f6b55;color:#ffffff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:12px">{{ if eq .Data.preferred_language "de" }}E-Mail best&auml;tigen{{ else if eq .Data.preferred_language "fr" }}Confirmer mon e-mail{{ else }}Confirm my email{{ end }}</a>
               </td>
             </tr>
-            <tr><td style="padding-top:26px;font-size:12px;line-height:1.5;color:#7b8782">If you did not create a Werkly account, you can ignore this email. This link is personal and should not be forwarded.</td></tr>
-            <tr><td style="padding-top:18px;font-size:12px;line-height:1.5;color:#7b8782">Deutsch: Best&auml;tige deine E-Mail-Adresse &uuml;ber die Schaltfl&auml;che oben.<br>Fran&ccedil;ais : confirme ton adresse e-mail avec le bouton ci-dessus.</td></tr>
+            <tr><td style="padding-top:26px;font-size:12px;line-height:1.5;color:#7b8782">{{ if eq .Data.preferred_language "de" }}Wenn du kein Werkly-Konto erstellt hast, kannst du diese E-Mail ignorieren. Dieser Link ist pers&ouml;nlich und sollte nicht weitergeleitet werden.{{ else if eq .Data.preferred_language "fr" }}Si tu n&rsquo;as pas cr&eacute;&eacute; de compte Werkly, tu peux ignorer cet e-mail. Ce lien est personnel et ne doit pas &ecirc;tre transf&eacute;r&eacute;.{{ else }}If you did not create a Werkly account, you can ignore this email. This link is personal and should not be forwarded.{{ end }}</td></tr>
           </table>
         </td>
       </tr>

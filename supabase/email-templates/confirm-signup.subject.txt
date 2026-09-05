@@ -1,1 +1,1 @@
-Confirm your Werkly account
+{{ if eq .Data.preferred_language "de" }}Bestätige dein Werkly-Konto{{ else if eq .Data.preferred_language "fr" }}Confirme ton compte Werkly{{ else }}Confirm your Werkly account{{ end }}
