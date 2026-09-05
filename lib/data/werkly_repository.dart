@@ -302,12 +302,16 @@ class UserWorkspaceState {
     required this.favoriteJobIds,
     required this.applications,
     required this.profile,
+    this.keywordsCopiedJobIds = const {},
+    this.materialsPreparedJobIds = const {},
   });
 
   final List<Map<String, dynamic>> jobs;
   final Set<int> favoriteJobIds;
   final Map<int, String> applications;
   final UserProfileData profile;
+  final Set<int> keywordsCopiedJobIds;
+  final Set<int> materialsPreparedJobIds;
 }
 
 class EmployerSubmissionData {
@@ -442,7 +446,7 @@ class WerklyRepository {
       _client.from('favorites').select('job_id').eq('user_id', user.id),
       _client
           .from('applications')
-          .select('job_id,status')
+          .select('job_id,status,keywords_copied,materials_prepared')
           .eq('user_id', user.id),
       _client.from('profiles').select().eq('id', user.id).maybeSingle(),
     ]);
@@ -450,9 +454,16 @@ class WerklyRepository {
         .map((row) => (row as Map<String, dynamic>)['job_id'] as int)
         .toSet();
     final applications = <int, String>{};
+    final keywordsCopiedJobIds = <int>{};
+    final materialsPreparedJobIds = <int>{};
     for (final item in results[1] as List) {
       final row = item as Map<String, dynamic>;
-      applications[row['job_id'] as int] = row['status'] as String;
+      final jobId = row['job_id'] as int;
+      applications[jobId] = row['status'] as String;
+      if (row['keywords_copied'] == true) keywordsCopiedJobIds.add(jobId);
+      if (row['materials_prepared'] == true) {
+        materialsPreparedJobIds.add(jobId);
+      }
     }
     final profileRow = results[2] == null
         ? null
@@ -462,6 +473,8 @@ class WerklyRepository {
       favoriteJobIds: favorites,
       applications: applications,
       profile: UserProfileData.fromRow(profileRow),
+      keywordsCopiedJobIds: keywordsCopiedJobIds,
+      materialsPreparedJobIds: materialsPreparedJobIds,
     );
   }
 
@@ -510,6 +523,37 @@ class WerklyRepository {
       'applied_at': status == 'applied'
           ? DateTime.now().toUtc().toIso8601String()
           : null,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
+  // Persists the prep-sheet's "keywords tailored" / "kit or letter prepared"
+  // checklist progress so it survives closing and reopening the sheet,
+  // instead of always resetting to the in-memory default. Guests are a
+  // no-op here (unchanged behavior) -- the same scope trade-off already
+  // made for CV versions, since extending the guest local-storage format
+  // for two extra flags isn't worth the complexity for this app.
+  Future<void> setApplicationKeywordsCopied(int jobId, {required bool value}) async {
+    final user = currentUser;
+    if (user == null) return;
+    await _client.from('applications').upsert({
+      'user_id': user.id,
+      'job_id': jobId,
+      'keywords_copied': value,
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
+  Future<void> setApplicationMaterialsPrepared(
+    int jobId, {
+    required bool value,
+  }) async {
+    final user = currentUser;
+    if (user == null) return;
+    await _client.from('applications').upsert({
+      'user_id': user.id,
+      'job_id': jobId,
+      'materials_prepared': value,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     });
   }

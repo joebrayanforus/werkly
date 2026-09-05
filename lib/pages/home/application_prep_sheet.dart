@@ -6,24 +6,32 @@ class _ApplicationPrepSheet extends StatefulWidget {
     required this.profile,
     required this.cvVersions,
     required this.initialStatus,
+    required this.initialKeywordsCopied,
+    required this.initialMaterialsPrepared,
     required this.onGenerateLetter,
     required this.onExportKit,
     required this.onSetReminder,
     required this.onOpenOriginal,
     required this.onEditProfile,
     required this.onStatusChanged,
+    required this.onKeywordsCopied,
+    required this.onMaterialsPrepared,
   });
 
   final Job job;
   final UserProfileData profile;
   final List<CvVersionData> cvVersions;
   final String initialStatus;
+  final bool initialKeywordsCopied;
+  final bool initialMaterialsPrepared;
   final Future<void> Function() onGenerateLetter;
   final Future<void> Function(CvVersionData? cvVersion) onExportKit;
   final Future<bool> Function() onSetReminder;
   final Future<void> Function() onOpenOriginal;
   final Future<void> Function() onEditProfile;
   final Future<void> Function(String status) onStatusChanged;
+  final VoidCallback onKeywordsCopied;
+  final VoidCallback onMaterialsPrepared;
 
   @override
   State<_ApplicationPrepSheet> createState() => _ApplicationPrepSheetState();
@@ -36,9 +44,9 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
     widget.cvVersions,
   );
   late CvVersionData? _selected = _autoSelected;
-  bool _letterPrepared = false;
-  bool _kitPrepared = false;
-  bool _keywordsCopied = false;
+  late bool _letterPrepared = widget.initialMaterialsPrepared;
+  late bool _kitPrepared = widget.initialMaterialsPrepared;
+  late bool _keywordsCopied = widget.initialKeywordsCopied;
   bool _offerOpened = false;
   bool _reminderSet = false;
   bool _savingStatus = false;
@@ -56,8 +64,7 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
   double get _progress {
     var completed = 0;
     if (_profileReady) completed++;
-    if (_keywordsCopied ||
-        missingJobSkills(widget.job, widget.profile.skills).isEmpty) {
+    if (_keywordsCopied || missingJobSkills(widget.job, _activeSkills).isEmpty) {
       completed++;
     }
     if (_letterPrepared || _kitPrepared) completed++;
@@ -71,6 +78,7 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
     await Clipboard.setData(ClipboardData(text: keywords));
     if (!mounted) return;
     setState(() => _keywordsCopied = true);
+    widget.onKeywordsCopied();
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(context.tr('keywordsCopied'))));
@@ -79,6 +87,7 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
   Future<void> _generateLetter() async {
     await widget.onGenerateLetter();
     if (mounted) setState(() => _letterPrepared = true);
+    widget.onMaterialsPrepared();
   }
 
   Future<void> _exportKit() async {
@@ -89,6 +98,7 @@ class _ApplicationPrepSheetState extends State<_ApplicationPrepSheet> {
         _letterPrepared = true;
       });
     }
+    widget.onMaterialsPrepared();
   }
 
   Future<void> _openOffer() async {

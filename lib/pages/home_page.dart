@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:file_picker/file_picker.dart';
@@ -494,6 +495,8 @@ class _HomePageState extends State<HomePage> {
   final Set<int> _savedJobs = <int>{};
   final Set<int> _appliedJobs = <int>{};
   final Map<int, String> _applicationStatuses = <int, String>{};
+  final Set<int> _keywordsCopiedJobs = <int>{};
+  final Set<int> _materialsPreparedJobs = <int>{};
   UserProfileData _profile = UserProfileData.guest();
   List<CvVersionData> _cvVersions = const [];
   double _minimumSalary = 0;
@@ -611,6 +614,12 @@ class _HomePageState extends State<HomePage> {
         _applicationStatuses
           ..clear()
           ..addAll(state.applications);
+        _keywordsCopiedJobs
+          ..clear()
+          ..addAll(state.keywordsCopiedJobIds);
+        _materialsPreparedJobs
+          ..clear()
+          ..addAll(state.materialsPreparedJobIds);
         _jobsUpdatedAt = DateTime.now();
         _isLoadingWorkspace = false;
         _isRefreshingJobs = false;
@@ -2108,6 +2117,8 @@ class _HomePageState extends State<HomePage> {
       if (status == null) {
         _applicationStatuses.remove(id);
         _appliedJobs.remove(id);
+        _keywordsCopiedJobs.remove(id);
+        _materialsPreparedJobs.remove(id);
       } else {
         _applicationStatuses[id] = status;
         _appliedJobs.add(id);
@@ -2264,6 +2275,8 @@ class _HomePageState extends State<HomePage> {
         profile: _profile,
         cvVersions: _cvVersions,
         initialStatus: initialStatus,
+        initialKeywordsCopied: _keywordsCopiedJobs.contains(job.id),
+        initialMaterialsPrepared: _materialsPreparedJobs.contains(job.id),
         onGenerateLetter: () => _showLetter(job),
         onExportKit: (cvVersion) =>
             _showApplicationKit(job, cvVersion: cvVersion),
@@ -2271,8 +2284,28 @@ class _HomePageState extends State<HomePage> {
         onOpenOriginal: () => _openOriginalJob(job),
         onEditProfile: _editProfile,
         onStatusChanged: (status) => _setApplicationStatus(job.id, status),
+        onKeywordsCopied: () => _setKeywordsCopied(job.id),
+        onMaterialsPrepared: () => _setMaterialsPrepared(job.id),
       ),
     );
+  }
+
+  // Fire-and-forget: the sheet already updated its own local checkbox
+  // optimistically, so this just needs to make it stick for next time.
+  void _setKeywordsCopied(int jobId) {
+    if (_keywordsCopiedJobs.add(jobId)) {
+      unawaited(
+        _repository.setApplicationKeywordsCopied(jobId, value: true),
+      );
+    }
+  }
+
+  void _setMaterialsPrepared(int jobId) {
+    if (_materialsPreparedJobs.add(jobId)) {
+      unawaited(
+        _repository.setApplicationMaterialsPrepared(jobId, value: true),
+      );
+    }
   }
 
   Future<bool> _setApplicationReminder(Job job) async {
