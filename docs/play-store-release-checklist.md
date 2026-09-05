@@ -4,10 +4,12 @@
 
 - [ ] Google developer identity approved.
 - [ ] Android device verification completed in the Play Console mobile app.
-- [ ] Custom SMTP enabled and confirmation/password-reset emails tested.
-- [x] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page. Live at:
+- [ ] Custom SMTP enabled and confirmation/password-reset emails tested. Personalized, localized templates are written and pushed (`supabase/email-templates/`, commit `dc55b53`) — still need to be pasted into Supabase → Authentication → Emails → Templates and verified with a real test send.
+- [x] Google Sign-In fixed and verified end-to-end on the web build: `redirectTo` was hardcoded to the domain root instead of preserving the `/werkly/` sub-path (`lib/services/auth_redirects.dart`, commit `d58bc34`), and `https://joebrayanforus.github.io/werkly/**` was missing from Supabase's Redirect URLs allowlist. Both fixed; a fresh sign-in now lands back in the app instead of the fallback confirmation page. Google Cloud OAuth consent branding also configured: app name "Werkly", logo, support email, homepage/privacy/terms links, both `supabase.co` and `github.io` domains authorized. Note: the "Sign in to X" line on Google's consent screen will still show the Supabase domain rather than "Werkly" — that requires a custom domain for Supabase Auth, which isn't in place.
+- [x] Stable HTTPS hosting deployed for the web app, privacy policy, terms of service and account-deletion page. Live at:
   - App: https://joebrayanforus.github.io/werkly/
   - Privacy policy: https://joebrayanforus.github.io/werkly/privacy.html
+  - Terms of service: https://joebrayanforus.github.io/werkly/terms.html
   - Account deletion: https://joebrayanforus.github.io/werkly/account-deletion.html
 - [x] Legal controller name, address and support email added to the privacy policy.
 - [x] Privacy policy is readable from registration and from the in-app profile.
@@ -21,7 +23,7 @@
 - [x] Prepare the 512 × 512 icon at `assets/store/app-icon-512.png`.
 - [x] Prepare the 1024 × 500 feature graphic at `assets/store/feature-graphic-1024x500.png`.
 - [x] Upload at least two accurate phone screenshots; four are prepared at `assets/store/screenshots/` (1080 × 2400, captured on a Pixel 8 emulator running the debug build, 5 September 2026): `01-preferences.png`, `02-matching-explanation.png`, `03-map-commute.png`, `04-application-tracking.png`.
-- [ ] Select the appropriate app category and provide support contact details.
+- [ ] Select the appropriate app category and provide support contact details. Recommended: category **Business** (Play has no dedicated "Jobs" category), support email `joeoumbe@gmail.com`, website `https://joebrayanforus.github.io/werkly/`.
 - [x] Add the public privacy policy URL: https://joebrayanforus.github.io/werkly/privacy.html
 
 ## App content
