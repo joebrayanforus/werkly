@@ -254,8 +254,12 @@ class _OpportunityMap extends StatelessWidget {
     // Pins show each job's compatibility match, so pick the best-scoring
     // jobs rather than whatever happens to be first in the unsorted list --
     // otherwise the pins can show 0% for jobs that just haven't been ranked
-    // against the profile yet.
-    final ranked = [...jobs]..sort((a, b) => b.match.compareTo(a.match));
+    // against the profile yet. Jobs the app can't score at all yet (empty
+    // guest profile, no CV/skills) are dropped rather than shown as "0",
+    // matching the unscored handling used everywhere else (job cards, job
+    // detail, map markers).
+    final ranked = jobs.where((job) => job.compatibility.scored).toList()
+      ..sort((a, b) => b.match.compareTo(a.match));
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
