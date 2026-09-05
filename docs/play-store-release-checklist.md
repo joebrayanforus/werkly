@@ -5,7 +5,10 @@
 - [ ] Google developer identity approved.
 - [ ] Android device verification completed in the Play Console mobile app.
 - [ ] Custom SMTP enabled and confirmation/password-reset emails tested.
-- [ ] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page (full web app + both pages pushed to `gh-pages`; enabling Pages in repo Settings is still pending).
+- [x] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page. Live at:
+  - App: https://joebrayanforus.github.io/werkly/
+  - Privacy policy: https://joebrayanforus.github.io/werkly/privacy.html
+  - Account deletion: https://joebrayanforus.github.io/werkly/account-deletion.html
 - [x] Legal controller name, address and support email added to the privacy policy.
 - [x] Privacy policy is readable from registration and from the in-app profile.
 - [x] Generated AI answers have an in-app reporting flow backed by an RLS-protected report table.
@@ -19,12 +22,12 @@
 - [x] Prepare the 1024 × 500 feature graphic at `assets/store/feature-graphic-1024x500.png`.
 - [ ] Upload at least two accurate phone screenshots; four 1080 × 1920 screenshots are prepared/recommended.
 - [ ] Select the appropriate app category and provide support contact details.
-- [ ] Add the public privacy policy URL.
+- [x] Add the public privacy policy URL: https://joebrayanforus.github.io/werkly/privacy.html
 
 ## App content
 
 - [ ] Complete Data safety using `docs/play-store-data-safety.md` as the draft.
-- [ ] Provide the public external account-deletion URL.
+- [x] Provide the public external account-deletion URL: https://joebrayanforus.github.io/werkly/account-deletion.html
 - [ ] Complete content rating questionnaire.
 - [ ] Complete target audience and content declarations.
 - [ ] Complete ads declaration: the app contains no ads.
