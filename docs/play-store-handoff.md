@@ -47,24 +47,32 @@ uploaded again:
 The deployable web package is in `build/web`; it contains both
 `privacy.html` and `account-deletion.html`.
 
-## Privacy and account-deletion pages: hosting status
+## Web hosting status
 
-Pushed to the `gh-pages` branch on 5 September 2026 (commit `c30b4971`),
-containing only `privacy.html` and `account-deletion.html` at the branch
-root. **GitHub Pages still needs to be enabled** (repo Settings → Pages →
-Source: Deploy from a branch → `gh-pages` / `(root)` → Save) — this requires
-signing in as the repo owner, so it wasn't done automatically. Once enabled,
-the pages resolve at:
+The full web app (release build, `--base-href /werkly/`) plus `privacy.html`
+and `account-deletion.html` are pushed to the `gh-pages` branch (commit
+`65d51d3`, 5 September 2026). **GitHub Pages still needs to be enabled** (repo
+Settings → Pages → Source: Deploy from a branch → `gh-pages` / `(root)` →
+Save) — this requires signing in as the repo owner, so it wasn't done
+automatically. Once enabled, these resolve:
 
+- `https://joebrayanforus.github.io/werkly/` — the live Werkly web app
 - `https://joebrayanforus.github.io/werkly/privacy.html`
 - `https://joebrayanforus.github.io/werkly/account-deletion.html`
 
-Enter both URLs in Play Console (privacy policy field, and the
-account-deletion URL in Data safety). Note: only the two static pages are
-published this way, not the full Werkly web app, so the "Open Werkly" button
-on the account-deletion page won't resolve yet — its written instructions
-(delete via the mobile app, or email support) still work. Deploy the full
-`build/web` output to the same branch if that button should also work.
+Enter the last two URLs in Play Console (privacy policy field, and the
+account-deletion URL in Data safety). The "Open Werkly" button on the
+account-deletion page now resolves to the live web app.
+
+Known limitation of this specific subpath deployment: the Web Push
+registration in `web/index.html` uses an absolute service-worker scope
+(`/push/`), which only matches when the app is served from the domain root.
+Under `/werkly/` that registration fails (caught and logged, not fatal —
+job search, sign-in, CV upload/analysis and account deletion are unaffected)
+and web push silently stays unavailable at this URL. This does not affect
+the Android app, which uses local notifications, not Web Push. If Werkly is
+later hosted on its own domain or at root, this resolves itself; rebuilding
+with a corrected relative scope would fix it here too.
 
 ## Actions that require the developer account
 

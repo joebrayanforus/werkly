@@ -5,7 +5,7 @@
 - [ ] Google developer identity approved.
 - [ ] Android device verification completed in the Play Console mobile app.
 - [ ] Custom SMTP enabled and confirmation/password-reset emails tested.
-- [ ] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page (pages pushed to `gh-pages`; enabling Pages in repo Settings is still pending).
+- [ ] Stable HTTPS hosting deployed for the web app, privacy policy and account-deletion page (full web app + both pages pushed to `gh-pages`; enabling Pages in repo Settings is still pending).
 - [x] Legal controller name, address and support email added to the privacy policy.
 - [x] Privacy policy is readable from registration and from the in-app profile.
 - [x] Generated AI answers have an in-app reporting flow backed by an RLS-protected report table.
