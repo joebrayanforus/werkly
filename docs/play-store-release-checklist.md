@@ -20,7 +20,7 @@
 - [ ] Paste the localized texts from `docs/play-store-listing.md`.
 - [x] Prepare the 512 × 512 icon at `assets/store/app-icon-512.png`.
 - [x] Prepare the 1024 × 500 feature graphic at `assets/store/feature-graphic-1024x500.png`.
-- [ ] Upload at least two accurate phone screenshots; four 1080 × 1920 screenshots are prepared/recommended.
+- [x] Upload at least two accurate phone screenshots; four are prepared at `assets/store/screenshots/` (1080 × 2400, captured on a Pixel 8 emulator running the debug build, 5 September 2026): `01-preferences.png`, `02-matching-explanation.png`, `03-map-commute.png`, `04-application-tracking.png`.
 - [ ] Select the appropriate app category and provide support contact details.
 - [x] Add the public privacy policy URL: https://joebrayanforus.github.io/werkly/privacy.html
 

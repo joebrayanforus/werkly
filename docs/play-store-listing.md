@@ -87,7 +87,15 @@ Werkly n’est pas affilié à LinkedIn, Indeed ou StepStone. Le contenu et la d
 
 - App icon: 512 × 512 PNG, maximum 1 MB.
 - Feature graphic: 1024 × 500 JPEG or 24-bit PNG without alpha.
-- At least two phone screenshots; prepare four portrait screenshots at 1080 × 1920 for better eligibility.
-- Recommended screenshot order: onboarding/preferences, matching explanation, map and commute, application kit/tracking.
+- At least two phone screenshots; four are prepared at `assets/store/screenshots/`
+  (1080 × 2400, captured on a Pixel 8 emulator, guest mode, 5 September 2026):
+  1. `01-preferences.png` — city, field, work mode, availability and German level
+  2. `02-matching-explanation.png` — the "Why this job matches you" score breakdown
+  3. `03-map-commute.png` — the OpenStreetMap job map with distance filter
+  4. `04-application-tracking.png` — the Kanban-style application tracker
+
+  These are guest-mode captures with no personalized CV/profile data — swap in
+  screenshots from a signed-in account with a real CV analyzed if a more
+  filled-in profile is preferred before upload.
 
 Official requirements: https://support.google.com/googleplay/android-developer/answer/9866151
