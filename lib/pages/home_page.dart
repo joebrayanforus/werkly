@@ -1975,7 +1975,19 @@ class _HomePageState extends State<HomePage> {
         '${context.tr('applicationFilePrefix')}_${safeCompany.isEmpty ? 'werkstudent' : safeCompany}.pdf';
 
     Future<Uint8List> buildVerifiedPdf() async {
-      final bytes = await ApplicationKitService.buildPdf(data);
+      Uint8List? originalCvBytes;
+      final cvPath = _profile.cvPath;
+      if (cvPath != null && cvPath.trim().isNotEmpty) {
+        try {
+          originalCvBytes = await _repository.downloadCv(cvPath);
+        } catch (_) {
+          originalCvBytes = null;
+        }
+      }
+      final bytes = await ApplicationKitService.buildPdf(
+        data,
+        originalCvBytes: originalCvBytes,
+      );
       if (!isUsablePdf(bytes)) {
         throw StateError('Generated a malformed PDF.');
       }

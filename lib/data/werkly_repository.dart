@@ -680,6 +680,18 @@ class WerklyRepository {
     return Uri.parse(signedUrl);
   }
 
+  Future<Uint8List> downloadCv(String path) async {
+    final user = currentUser;
+    if (user == null) {
+      throw AuthException(_tr('errorSignInViewCv'));
+    }
+    final normalized = path.trim();
+    if (normalized.isEmpty || !normalized.startsWith('${user.id}/')) {
+      throw FormatException(_tr('errorInvalidCvPath'));
+    }
+    return _client.storage.from('cvs').download(normalized);
+  }
+
   Future<void> submitEmployerJob({
     required String companyName,
     required String contactName,

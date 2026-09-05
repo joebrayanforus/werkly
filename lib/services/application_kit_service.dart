@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../l10n/app_language.dart';
 import 'compatibility_service.dart';
@@ -233,7 +234,10 @@ class ApplicationKitService {
     return setup.document.save();
   }
 
-  static Future<Uint8List> buildPdf(ApplicationKitData data) async {
+  static Future<Uint8List> buildPdf(
+    ApplicationKitData data, {
+    Uint8List? originalCvBytes,
+  }) async {
     final setup = await _newDocument(data);
     final document = setup.document;
     final theme = setup.theme;
@@ -396,7 +400,41 @@ class ApplicationKitService {
       ),
     );
 
+    if (originalCvBytes != null) {
+      await _appendOriginalCv(document, originalCvBytes);
+    }
+
     return document.save();
+  }
+
+  /// Rasterizes the applicant's own uploaded CV and appends it page-by-page
+  /// after the letter/summary, so the whole application (letter + tailored
+  /// summary + the real CV) downloads as one file instead of two separate
+  /// ones. Rasterized rather than merged as vector content -- `package:pdf`
+  /// is a PDF *writer*, not a general editor, so this is the only
+  /// cross-platform (including web) way to embed an arbitrary existing PDF's
+  /// pages. Never lets a corrupt or unreadable upload break the two pages
+  /// that already built successfully.
+  static Future<void> _appendOriginalCv(
+    pw.Document document,
+    Uint8List cvBytes,
+  ) async {
+    try {
+      await for (final page in Printing.raster(cvBytes, dpi: 150)) {
+        final image = pw.MemoryImage(await page.toPng());
+        document.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            margin: pw.EdgeInsets.zero,
+            build: (context) =>
+                pw.Center(child: pw.Image(image, fit: pw.BoxFit.contain)),
+          ),
+        );
+      }
+    } catch (_) {
+      // Fall through silently -- the letter and tailored-profile pages are
+      // still a complete, valid kit on their own.
+    }
   }
 
   static pw.Widget _header(String title, String date) => pw.Row(
