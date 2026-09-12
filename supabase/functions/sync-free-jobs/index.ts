@@ -39,6 +39,16 @@ type BaJob = {
   alleBerufe?: string[]
   datumErsteVeroeffentlichung?: string
   aenderungsdatum?: string
+  arbeitszeitVollzeit?: boolean
+  arbeitszeitTeilzeitVormittag?: boolean
+  arbeitszeitTeilzeitNachmittag?: boolean
+  arbeitszeitTeilzeitAbend?: boolean
+  arbeitszeitTeilzeitFlexibel?: boolean
+  arbeitszeitSchichtNachtWochenende?: boolean
+  eintrittszeitraum?: { von?: string }
+  verguetungsangabe?: string
+  artDerVerguetung?: string
+  festgehalt?: number
 }
 
 type GreenhouseJob = {
@@ -330,6 +340,59 @@ function skills(title: string, description: string, extras: string[] = []) {
     .slice(0, 10)
 }
 
+// The Bundesagentur search endpoint (unlike its per-job jobdetails endpoint,
+// which returned 403 for every path/header combination tried) never returns
+// posting prose -- only structured facts about the role. Turning those into
+// a few concrete sentences beats the one-line placeholder this used to be,
+// without inventing anything the API didn't actually report.
+function baWorkTime(job: BaJob) {
+  if (job.arbeitszeitVollzeit) return 'Vollzeit'
+  const parts = [
+    job.arbeitszeitTeilzeitVormittag && 'vormittags',
+    job.arbeitszeitTeilzeitNachmittag && 'nachmittags',
+    job.arbeitszeitTeilzeitAbend && 'abends',
+    job.arbeitszeitTeilzeitFlexibel && 'flexibel',
+  ].filter(Boolean)
+  return parts.length > 0 ? `Teilzeit (${parts.join(', ')})` : ''
+}
+
+const baPayUnit: Record<string, string> = {
+  JAHRESGEHALT: '€/Jahr',
+  MONATSGEHALT: '€/Monat',
+  WOCHENLOHN: '€/Woche',
+  STUNDENLOHN: '€/Stunde',
+  TAGESLOHN: '€/Tag',
+}
+
+function baDescription(job: BaJob, tags: string[]) {
+  const sentences = [
+    tags.length > 0
+      ? `Werkstudentenstelle im Bereich ${tags.join(', ')}.`
+      : 'Werkstudentenstelle veröffentlicht über die Bundesagentur für Arbeit.',
+  ]
+
+  const workTime = baWorkTime(job)
+  if (workTime) sentences.push(`Arbeitszeit: ${workTime}.`)
+  if (job.arbeitszeitSchichtNachtWochenende) sentences.push('Schicht-, Nacht- oder Wochenendarbeit möglich.')
+
+  const start = text(job.eintrittszeitraum?.von)
+  if (start) {
+    const date = new Date(start)
+    const formatted = Number.isNaN(date.getTime())
+      ? start
+      : date.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+    sentences.push(`Eintritt ab ${formatted}.`)
+  }
+
+  if (job.artDerVerguetung === 'FESTGEHALT' && typeof job.festgehalt === 'number' && job.festgehalt > 0) {
+    const amount = Math.round(job.festgehalt).toLocaleString('de-DE')
+    const unit = baPayUnit[job.verguetungsangabe ?? ''] ?? '€'
+    sentences.push(`Vergütung: ca. ${amount} ${unit}.`)
+  }
+
+  return sentences.join(' ')
+}
+
 async function fetchBundesagentur(): Promise<JobRow[]> {
   // Verified live against the API: this exact query reports maxCount: 4170
   // total matching postings, of which a single page only ever covered 100.
@@ -382,9 +445,7 @@ async function fetchBundesagentur(): Promise<JobRow[]> {
         `https://www.arbeitsagentur.de/jobsuche/jobdetail/${encodeURIComponent(reference)}`,
       ),
       tags,
-      description: tags.length > 0
-        ? `Werkstudentenstelle im Bereich ${tags.join(', ')}.`
-        : 'Werkstudentenstelle veröffentlicht über die Bundesagentur für Arbeit.',
+      description: baDescription(job, tags),
       posted_at: job.datumErsteVeroeffentlichung ?? job.aenderungsdatum ?? new Date().toISOString(),
       expires_at: null,
       active: true,
