@@ -1127,6 +1127,15 @@ class _HomePageState extends State<HomePage> {
     setState(() => _pageIndex = index);
   }
 
+  void _handleGlobalSearch(String value) {
+    setState(() {
+      _query = value;
+      if (value.trim().isNotEmpty && _pageIndex != 1) {
+        _pageIndex = 1;
+      }
+    });
+  }
+
   void _showAssistant([String? initialPrompt]) {
     if (_jobCatalog.isEmpty) {
       ScaffoldMessenger.of(
@@ -2611,7 +2620,7 @@ class _HomePageState extends State<HomePage> {
                   _TopBar(
                     desktop: desktop,
                     pageIndex: _pageIndex,
-                    onSearch: (value) => setState(() => _query = value),
+                    onSearch: _handleGlobalSearch,
                     onAssistant: _showAssistant,
                     onNotifications: _showNotifications,
                     unreadNotifications: _unreadNotificationCount,
