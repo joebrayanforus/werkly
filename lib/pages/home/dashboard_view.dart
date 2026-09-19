@@ -64,6 +64,7 @@ class _DashboardView extends StatelessWidget {
                                     ?.round() ??
                                 25,
                             onOpenMap: onOpenMap,
+                            onEditLocation: onEditPreferences,
                           ),
                         ),
                         const SizedBox(width: 20),
@@ -87,6 +88,7 @@ class _DashboardView extends StatelessWidget {
                               ?.round() ??
                           25,
                       onOpenMap: onOpenMap,
+                      onEditLocation: onEditPreferences,
                     ),
                     const SizedBox(height: 18),
                     _ProfileInsightCard(
@@ -254,11 +256,13 @@ class _OpportunityMap extends StatelessWidget {
     required this.city,
     required this.radiusKm,
     required this.onOpenMap,
+    required this.onEditLocation,
   });
   final List<Job> jobs;
   final String city;
   final int radiusKm;
   final VoidCallback onOpenMap;
+  final VoidCallback onEditLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -282,31 +286,48 @@ class _OpportunityMap extends StatelessWidget {
             Positioned(
               left: 20,
               top: 18,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 13,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(13),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x14000000), blurRadius: 16),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      color: _green,
-                      size: 18,
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(13),
+                elevation: 0,
+                child: Tooltip(
+                  message: context.tr('changeCity'),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(13),
+                    onTap: onEditLocation,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 13,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x14000000), blurRadius: 16),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_rounded,
+                            color: _green,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${city.trim().isEmpty ? context.tr('countryGermany') : city} · ${context.tr('radius')} $radiusKm km',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.edit_rounded,
+                            color: _muted,
+                            size: 14,
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${city.trim().isEmpty ? context.tr('countryGermany') : city} · ${context.tr('radius')} $radiusKm km',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

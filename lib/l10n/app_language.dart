@@ -122,6 +122,7 @@ class AppStrings {
       'Präferenzen bearbeiten',
       'Edit preferences',
     ],
+    'changeCity': ['Changer de ville', 'Stadt ändern', 'Change city'],
     'aiSummary': ['Résumé IA', 'KI-Zusammenfassung', 'AI summary'],
     'addSummary': [
       'Ajoute un résumé professionnel pour présenter clairement ton objectif.',
