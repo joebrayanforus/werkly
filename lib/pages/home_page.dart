@@ -241,6 +241,7 @@ class Job {
     this.remote = false,
     this.remoteType = 'onsite',
     this.routeUrl,
+    this.distanceKm,
     this.compatibility = const CompatibilityBreakdown.unscored(),
   });
 
@@ -264,6 +265,7 @@ class Job {
   final bool remote;
   final String remoteType;
   final Uri? routeUrl;
+  final double? distanceKm;
   final CompatibilityBreakdown compatibility;
 }
 
@@ -594,11 +596,14 @@ class _HomePageState extends State<HomePage> {
       final savedSearches = await _savedSearchService.loadAll();
       final cvVersions = await _repository.listCvVersions();
       if (!mounted) return;
+      // Set ahead of building the catalog (not inside the setState below) so
+      // _jobFromRow's distance/compatibility math uses this profile's own
+      // city and radius rather than whatever was loaded before it.
+      _profile = state.profile;
+      _distance = _storedSearchRadius(state.profile);
       final jobCatalog = await _buildJobCatalog(state.jobs);
       if (!mounted) return;
       setState(() {
-        _profile = state.profile;
-        _distance = _storedSearchRadius(state.profile);
         _jobRows = state.jobs;
         _jobCatalog = jobCatalog;
         _savedSearches = savedSearches;
@@ -945,9 +950,23 @@ class _HomePageState extends State<HomePage> {
     if (mounted) await _maybeShowOnboarding();
   }
 
+  // Jobs within the user's chosen search radius, plus remote jobs and jobs
+  // they've already saved (a saved job shouldn't vanish just because the
+  // radius was narrowed afterwards). Feeds every discovery surface -- Jobs
+  // list, Map, Dashboard -- so changing the city/radius actually changes
+  // what the app shows instead of only nudging the match score.
+  List<Job> get _jobsInRadius {
+    return _jobCatalog.where((job) {
+      if (job.remoteType == 'remote') return true;
+      if (_savedJobs.contains(job.id)) return true;
+      final distance = job.distanceKm;
+      return distance == null || distance <= _distance;
+    }).toList();
+  }
+
   List<Job> get _visibleJobs {
     final normalized = _query.trim().toLowerCase();
-    final filtered = _jobCatalog.where((job) {
+    final filtered = _jobsInRadius.where((job) {
       final searchMatch =
           normalized.isEmpty ||
           job.title.toLowerCase().contains(normalized) ||
@@ -1069,6 +1088,7 @@ class _HomePageState extends State<HomePage> {
       remote: remote,
       remoteType: remoteType,
       routeUrl: commute?.routeUrl,
+      distanceKm: distanceKm,
       compatibility: compatibility,
     );
   }
@@ -2651,10 +2671,10 @@ class _HomePageState extends State<HomePage> {
                               child: switch (_pageIndex) {
                                 0 => _DashboardView(
                                   jobs: sortJobsForDisplay(
-                                    _jobCatalog,
+                                    _jobsInRadius,
                                     JobSortOption.match,
                                   ).take(3).toList(),
-                                  allJobs: _jobCatalog,
+                                  allJobs: _jobsInRadius,
                                   profile: _profile,
                                   firstName: _firstName,
                                   savedJobs: _savedJobs,
