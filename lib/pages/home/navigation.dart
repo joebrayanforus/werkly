@@ -285,6 +285,7 @@ class _TopBar extends StatelessWidget {
   const _TopBar({
     required this.desktop,
     required this.pageIndex,
+    required this.query,
     required this.onSearch,
     required this.onAssistant,
     required this.onNotifications,
@@ -293,6 +294,7 @@ class _TopBar extends StatelessWidget {
 
   final bool desktop;
   final int pageIndex;
+  final String query;
   final ValueChanged<String> onSearch;
   final VoidCallback onAssistant;
   final VoidCallback onNotifications;
@@ -328,14 +330,7 @@ class _TopBar extends StatelessWidget {
             Flexible(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 440),
-                child: TextField(
-                  onChanged: onSearch,
-                  decoration: InputDecoration(
-                    hintText: context.tr('searchHint'),
-                    prefixIcon: const Icon(Icons.search_rounded, size: 21),
-                    isDense: true,
-                  ),
-                ),
+                child: _JobSearchField(query: query, onSearch: onSearch),
               ),
             ),
             const Spacer(),

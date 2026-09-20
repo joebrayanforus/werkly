@@ -117,17 +117,7 @@ class _JobsView extends StatelessWidget {
               ),
               if (showMobileSearch) ...[
                 const SizedBox(height: 14),
-                TextFormField(
-                  key: const ValueKey('mobile-job-search'),
-                  initialValue: query,
-                  onChanged: onSearch,
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: context.tr('searchHint'),
-                    prefixIcon: const Icon(Icons.search_rounded, size: 21),
-                    isDense: true,
-                  ),
-                ),
+                _JobSearchField(query: query, onSearch: onSearch),
               ],
               const SizedBox(height: 15),
               Expanded(
@@ -265,6 +255,71 @@ class _JobsView extends StatelessWidget {
         const SizedBox(height: 12),
         _PartnerSearches(onOpen: onExternalSearch),
       ],
+    );
+  }
+}
+
+class _JobSearchField extends StatefulWidget {
+  const _JobSearchField({required this.query, required this.onSearch});
+
+  final String query;
+  final ValueChanged<String> onSearch;
+
+  @override
+  State<_JobSearchField> createState() => _JobSearchFieldState();
+}
+
+class _JobSearchFieldState extends State<_JobSearchField> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.query)
+      ..addListener(_handleTextChanged);
+  }
+
+  @override
+  void didUpdateWidget(_JobSearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.query != _controller.text) {
+      _controller.text = widget.query;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_handleTextChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  // Rebuilds so the clear button's visibility tracks the controller's text
+  // -- TextField's internal state changes don't otherwise notify this widget.
+  void _handleTextChanged() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _controller,
+      onChanged: widget.onSearch,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: context.tr('searchHint'),
+        prefixIcon: const Icon(Icons.search_rounded, size: 21),
+        isDense: true,
+        suffixIcon: _controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: context.tr('clearSearch'),
+                icon: const Icon(Icons.close_rounded, size: 18),
+                onPressed: () {
+                  _controller.clear();
+                  widget.onSearch('');
+                },
+              ),
+      ),
     );
   }
 }

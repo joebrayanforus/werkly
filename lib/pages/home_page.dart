@@ -2640,6 +2640,7 @@ class _HomePageState extends State<HomePage> {
                   _TopBar(
                     desktop: desktop,
                     pageIndex: _pageIndex,
+                    query: _query,
                     onSearch: _handleGlobalSearch,
                     onAssistant: _showAssistant,
                     onNotifications: _showNotifications,

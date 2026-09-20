@@ -499,24 +499,6 @@ class _MapPainter extends CustomPainter {
         colors: [_orange.withValues(alpha: .25), _orange.withValues(alpha: 0)],
       ).createShader(Rect.fromCircle(center: center, radius: 85));
     canvas.drawCircle(center, 85, heatPaint);
-
-    final labelStyle = TextStyle(
-      color: _muted.withValues(alpha: .75),
-      fontSize: 10,
-      fontWeight: FontWeight.w700,
-    );
-    for (final item in <(String, Offset)>[
-      ('MAXVORSTADT', Offset(size.width * .24, size.height * .36)),
-      ('ALTSTADT', Offset(size.width * .49, size.height * .66)),
-      ('BOGENHAUSEN', Offset(size.width * .74, size.height * .32)),
-      ('SENDLING', Offset(size.width * .25, size.height * .87)),
-    ]) {
-      final painter = TextPainter(
-        text: TextSpan(text: item.$1, style: labelStyle),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      painter.paint(canvas, item.$2);
-    }
   }
 
   @override

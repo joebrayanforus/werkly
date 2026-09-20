@@ -44,7 +44,7 @@ void main() {
     );
     expect(
       const AppStrings(AppLanguage.en).format('jobsForYou', {'count': 12}),
-      '12 jobs for you',
+      '12 job(s) for you',
     );
     expect(
       const AppStrings(AppLanguage.de).get('reportAiContent'),

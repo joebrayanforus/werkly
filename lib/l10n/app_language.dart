@@ -310,9 +310,9 @@ class AppStrings {
       'Ranked by your CV, preferences and commute',
     ],
     'seeJobs': [
-      'Voir les {count} offres',
+      'Voir les {count} offre(s)',
       '{count} Jobs ansehen',
-      'See {count} jobs',
+      'See {count} job(s)',
     ],
     'jobsUpdated': ['Offres actualisées', 'Jobs aktualisiert', 'Jobs updated'],
     'newJobsToday': [
@@ -450,6 +450,7 @@ class AppStrings {
       'E.g. Köln, Berlin, Siegen…',
     ],
     'clearCity': ['Effacer la ville', 'Stadt löschen', 'Clear city'],
+    'clearSearch': ['Effacer la recherche', 'Suche löschen', 'Clear search'],
     'locatingCity': [
       'Recherche de ta ville…',
       'Deine Stadt wird gesucht…',
@@ -609,9 +610,9 @@ class AppStrings {
       'Manually choose your fields and skills.',
     ],
     'jobsForYou': [
-      '{count} offres pour toi',
+      '{count} offre(s) pour toi',
       '{count} Jobs für dich',
-      '{count} jobs for you',
+      '{count} job(s) for you',
     ],
     'changeFilters': [
       'Modifie tes filtres pour afficher davantage de résultats',
@@ -668,9 +669,9 @@ class AppStrings {
       'Maximum distance',
     ],
     'nearbyJobs': [
-      '{count} offres à proximité',
+      '{count} offre(s) à proximité',
       '{count} Jobs in der Nähe',
-      '{count} nearby jobs',
+      '{count} nearby job(s)',
     ],
     'profileNeedsCompletion': [
       'profil à compléter',
