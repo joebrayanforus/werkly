@@ -490,7 +490,9 @@ class _JobDetail extends StatelessWidget {
                 if (job.remote)
                   _Fact(
                     icon: Icons.home_work_outlined,
-                    label: context.tr('hybrid'),
+                    label: context.tr(
+                      job.remoteType == 'remote' ? 'remote' : 'hybrid',
+                    ),
                   ),
               ],
             ),
@@ -724,7 +726,9 @@ class _CompatibilityBlock extends StatelessWidget {
         (
           context.tr('criterionDistance'),
           result.distance / 100,
-          '${result.distance}%',
+          job.remoteType == 'remote'
+              ? context.tr('distanceRemoteLabel')
+              : '${result.distance}%',
         ),
       if (result.evaluates('freshness'))
         (

@@ -894,6 +894,8 @@ class AppStrings {
     'criterionExperience': ['Expérience', 'Erfahrung', 'Experience'],
     'criterionSalary': ['Salaire', 'Gehalt', 'Salary'],
     'criterionDistance': ['Distance', 'Entfernung', 'Distance'],
+    'distanceRemoteLabel': ['Remote', 'Remote', 'Remote'],
+    'remoteBadge': ['Remote', 'Remote', 'Remote'],
     'criterionFreshness': ['Fraîcheur', 'Aktualität', 'Freshness'],
     'scoreReliability': [
       'Fiabilité du score : {score}% · calcul fondé sur ton profil, les exigences et la date de publication.',

@@ -176,6 +176,27 @@ class _JobCard extends StatelessWidget {
                         style: const TextStyle(fontSize: 11),
                       ),
                     ),
+                    if (job.remoteType == 'remote') ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCE6DF),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          context.tr('remoteBadge'),
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: _green,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const SizedBox(height: 7),
